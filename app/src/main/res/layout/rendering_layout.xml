@@ -1,80 +1,87 @@
 <?xml version="1.0" encoding="utf-8"?>
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:orientation="vertical" android:layout_width="match_parent"
-    android:layout_height="match_parent">
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical">
+
+
 
     <ProgressBar
+        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        style="@style/Widget.AppCompat.ProgressBar.Horizontal"
-        android:progress="50"
-        />
+        android:progress="50" />
+
+
+
+    <android.support.v4.widget.NestedScrollView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:orientation="vertical"
+        >
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:orientation="vertical"
-        >
+        android:orientation="vertical">
 
         <TextView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textSize="20sp"
-            android:textStyle="bold"
-            android:text="subh ko aae ho nikle sham ke"
-            android:paddingStart="18dp"
-            android:paddingEnd="18dp"
             android:gravity="center"
-            android:textColor="#000000"
-            android:paddingTop="10dp"
             android:paddingBottom="10dp"
-            />
+            android:paddingEnd="18dp"
+            android:paddingStart="18dp"
+            android:paddingTop="10dp"
+            android:text="subh ko aae ho nikle sham ke"
+            android:textColor="#000000"
+            android:textSize="20sp"
+            android:textStyle="bold" />
 
 
         <RelativeLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:paddingBottom="10dp"
-            >
+            android:paddingBottom="10dp">
 
 
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:textAllCaps="true"
-                android:text="mirza ghalib"
-                android:paddingStart="18dp"
-                android:textStyle="bold"
                 android:layout_alignParentStart="true"
                 android:layout_alignParentTop="true"
                 android:paddingEnd="18dp"
+                android:paddingStart="18dp"
+                android:text="mirza ghalib"
+                android:textAllCaps="true"
                 android:textColor="#21c5ff"
-                />
+                android:textStyle="bold" />
 
 
             <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:orientation="horizontal"
                 android:layout_alignParentEnd="true"
                 android:layout_alignParentTop="true"
+                android:orientation="horizontal"
                 android:paddingEnd="18dp"
-                android:paddingStart="18dp"
-                >
+                android:paddingStart="18dp">
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/fire"
                     android:layout_marginEnd="5dp"
-                    />
+                    android:src="@drawable/fire" />
 
                 <ImageView
                     android:layout_width="24dp"
                     android:layout_height="24dp"
-                    android:src="@drawable/edu"
                     android:layout_marginStart="5dp"
-                    />
+                    android:src="@drawable/edu" />
 
 
             </LinearLayout>
@@ -88,13 +95,27 @@
     <TextView
         android:layout_width="match_parent"
         android:layout_height="1dp"
-        android:layout_marginStart="18dp"
         android:layout_marginEnd="18dp"
-        android:background="#cdcdcd"
+        android:layout_marginStart="18dp"
+        android:background="#cdcdcd" />
+
+
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:id="@+id/content"
+        android:gravity="center_horizontal"
+        android:orientation="vertical"
         />
 
 
 
+    </LinearLayout>
 
+
+
+
+    </android.support.v4.widget.NestedScrollView>
 
 </LinearLayout>

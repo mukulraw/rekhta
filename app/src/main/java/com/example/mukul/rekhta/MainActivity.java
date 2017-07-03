@@ -7,23 +7,53 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
+import android.view.MenuItem;
+import android.view.View;
 import android.widget.LinearLayout;
+import android.widget.ProgressBar;
+import android.widget.TextView;
+import android.widget.Toast;
+
+import com.example.mukul.rekhta.POJO.dataBean;
+
+import org.json.JSONArray;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
+import retrofit2.converter.scalars.ScalarsConverterFactory;
 
 public class MainActivity extends AppCompatActivity {
 
     Toolbar toolbar;
     LinearLayout layout;
     DrawerLayout drawer;
+    LinearLayout content;
+    Toast toast;
+    ProgressBar progress;
+    TextView title , author;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        content = (LinearLayout) findViewById(R.id.content);
         toolbar = (Toolbar)findViewById(R.id.toolbar);
-        layout = (LinearLayout)findViewById(R.id.layout_to_replace);
+        title = (TextView)findViewById(R.id.title);
+        author = (TextView)findViewById(R.id.author);
+
+        progress = (ProgressBar)findViewById(R.id.progress);
+
+        toast = Toast.makeText(this , null , Toast.LENGTH_SHORT);
 
         setSupportActionBar(toolbar);
 
@@ -42,15 +72,151 @@ public class MainActivity extends AppCompatActivity {
         toggle.syncState();
 
 
-        FragmentManager manager = getSupportFragmentManager();
+        progress.setVisibility(View.VISIBLE);
 
-        FragmentTransaction ft = manager.beginTransaction();
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("http://14.140.111.4:20002")
+                .addConverterFactory(ScalarsConverterFactory.create())
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
 
-        RenderFragment frag = new RenderFragment();
+        AllAPIs cr = retrofit.create(AllAPIs.class);
 
-        ft.add(R.id.layout_to_replace , frag);
-        ft.commit();
 
+        Call<dataBean> call = cr.getData("1" , "827D3643-BCC4-410B-B1B9-00008EBCA797");
+
+        call.enqueue(new Callback<dataBean>() {
+            @Override
+            public void onResponse(Call<dataBean> call, Response<dataBean> response) {
+
+                title.setText(response.body().getR().getCT());
+                title.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+                author.setText(response.body().getR().getPoet().getPN());
+                author.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+                String ddata = response.body().getR().getCR();
+
+                try {
+                    JSONObject jsonObject = new JSONObject(ddata);
+
+
+                    JSONArray paraArray = jsonObject.getJSONArray("P");
+
+                    LinearLayout con = new LinearLayout(MainActivity.this);
+                    con.setOrientation(LinearLayout.VERTICAL);
+                    con.setGravity(Gravity.CENTER_HORIZONTAL);
+
+                    for (int i = 0 ; i < paraArray.length() ; i++)
+                    {
+
+
+
+                        JSONObject pobj = paraArray.getJSONObject(i);
+                        JSONArray lineArray = pobj.getJSONArray("L");
+
+                        LinearLayout para = new LinearLayout(MainActivity.this);
+                        para.setOrientation(LinearLayout.VERTICAL);
+                        para.setGravity(Gravity.CENTER_HORIZONTAL);
+                        para.setPadding(5 , 10 , 5 , 10);
+
+                        for (int j = 0 ; j < lineArray.length() ; j++)
+                        {
+
+                            JSONObject lobj = lineArray.getJSONObject(j);
+
+                            JSONArray wordArray = lobj.getJSONArray("W");
+
+                            //String line = "";
+
+                            LinearLayout line = new LinearLayout(MainActivity.this);
+                            line.setOrientation(LinearLayout.HORIZONTAL);
+                            line.setGravity(Gravity.CENTER_HORIZONTAL);
+                            line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+                            line.setPadding(5 , 10 , 5 , 10);
+
+                            for (int k = 0 ; k < wordArray.length() ; k++)
+                            {
+
+                                JSONObject wordwrap = wordArray.getJSONObject(k);
+
+                                final String wo = wordwrap.getString("W");
+
+                                TextView word = new TextView(MainActivity.this);
+                                word.setPadding(5 , 0 , 5 , 0);
+                                word.setText(wo);
+
+                                word.setOnClickListener(new View.OnClickListener() {
+                                    @Override
+                                    public void onClick(View view) {
+                                        toast.setText("word: " + wo);
+                                        toast.show();
+                                    }
+                                });
+
+                                line.addView(word);
+
+                            }
+
+
+
+
+
+                            para.addView(line);
+
+
+
+                            Log.d("asdasd" , line + "\n");
+
+                        }
+
+                        final int finalI = i;
+                        para.setOnLongClickListener(new View.OnLongClickListener() {
+                            @Override
+                            public boolean onLongClick(View view) {
+
+                                toast.setText("para pressed: " + String.valueOf(finalI +1));
+
+                                toast.show();
+                                return true;
+                            }
+                        });
+
+                        con.addView(para);
+
+                        Log.d("asdasd" , "\n");
+
+                    }
+
+
+                    content.addView(con);
+
+                    progress.setVisibility(View.GONE);
+
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                    progress.setVisibility(View.GONE);
+                }
+
+
+
+
+
+                Log.d("asdasd" , ddata);
+
+                String formattedData = ddata.replaceAll("\\/" , ddata);
+
+                Log.d("asdasd" , formattedData);
+
+            }
+
+            @Override
+            public void onFailure(Call<dataBean> call, Throwable throwable) {
+
+                progress.setVisibility(View.GONE);
+
+            }
+        });
 
 
     }
@@ -62,6 +228,469 @@ public class MainActivity extends AppCompatActivity {
         inflater.inflate(R.menu.main_menu , menu);
 
 
+
+        return true;
+
+
+    }
+
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+
+        int id = item.getItemId();
+
+
+        if (id == R.id.en)
+        {
+
+            content.removeAllViews();
+
+            progress.setVisibility(View.VISIBLE);
+
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl("http://14.140.111.4:20002")
+                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            AllAPIs cr = retrofit.create(AllAPIs.class);
+
+
+            Call<dataBean> call = cr.getData("1" , "827D3643-BCC4-410B-B1B9-00008EBCA797");
+
+            call.enqueue(new Callback<dataBean>() {
+                @Override
+                public void onResponse(Call<dataBean> call, Response<dataBean> response) {
+
+                    title.setText(response.body().getR().getCT());
+                    title.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+                    author.setText(response.body().getR().getPoet().getPN());
+                    author.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+                    String ddata = response.body().getR().getCR();
+
+                    try {
+                        JSONObject jsonObject = new JSONObject(ddata);
+
+
+                        JSONArray paraArray = jsonObject.getJSONArray("P");
+
+                        LinearLayout con = new LinearLayout(MainActivity.this);
+                        con.setOrientation(LinearLayout.VERTICAL);
+                        con.setGravity(Gravity.CENTER_HORIZONTAL);
+
+                        for (int i = 0 ; i < paraArray.length() ; i++)
+                        {
+
+
+
+                            JSONObject pobj = paraArray.getJSONObject(i);
+                            JSONArray lineArray = pobj.getJSONArray("L");
+
+                            LinearLayout para = new LinearLayout(MainActivity.this);
+                            para.setOrientation(LinearLayout.VERTICAL);
+                            para.setGravity(Gravity.CENTER_HORIZONTAL);
+                            para.setPadding(5 , 10 , 5 , 10);
+
+                            for (int j = 0 ; j < lineArray.length() ; j++)
+                            {
+
+                                JSONObject lobj = lineArray.getJSONObject(j);
+
+                                JSONArray wordArray = lobj.getJSONArray("W");
+
+                                //String line = "";
+
+                                LinearLayout line = new LinearLayout(MainActivity.this);
+                                line.setOrientation(LinearLayout.HORIZONTAL);
+                                line.setGravity(Gravity.CENTER_HORIZONTAL);
+                                line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+                                line.setPadding(5 , 10 , 5 , 10);
+
+                                for (int k = 0 ; k < wordArray.length() ; k++)
+                                {
+
+                                    JSONObject wordwrap = wordArray.getJSONObject(k);
+
+                                    final String wo = wordwrap.getString("W");
+
+                                    TextView word = new TextView(MainActivity.this);
+                                    word.setPadding(5 , 0 , 5 , 0);
+                                    word.setText(wo);
+
+                                    word.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            toast.setText("word: " + wo);
+                                            toast.show();
+                                        }
+                                    });
+
+                                    line.addView(word);
+
+                                }
+
+
+
+
+
+                                para.addView(line);
+
+
+
+                                Log.d("asdasd" , line + "\n");
+
+                            }
+
+                            final int finalI = i;
+                            para.setOnLongClickListener(new View.OnLongClickListener() {
+                                @Override
+                                public boolean onLongClick(View view) {
+
+                                    toast.setText("para pressed: " + String.valueOf(finalI +1));
+
+                                    toast.show();
+                                    return true;
+                                }
+                            });
+
+                            con.addView(para);
+
+                            Log.d("asdasd" , "\n");
+
+                        }
+
+
+                        content.addView(con);
+
+                        progress.setVisibility(View.GONE);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        progress.setVisibility(View.GONE);
+                    }
+
+
+
+
+
+                    Log.d("asdasd" , ddata);
+
+                    String formattedData = ddata.replaceAll("\\/" , ddata);
+
+                    Log.d("asdasd" , formattedData);
+
+                }
+
+                @Override
+                public void onFailure(Call<dataBean> call, Throwable throwable) {
+
+                    progress.setVisibility(View.GONE);
+
+                }
+            });
+        }
+        else if (id == R.id.hi)
+        {
+            content.removeAllViews();
+
+            progress.setVisibility(View.VISIBLE);
+
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl("http://14.140.111.4:20002")
+                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            AllAPIs cr = retrofit.create(AllAPIs.class);
+
+
+            Call<dataBean> call = cr.getData("2" , "827D3643-BCC4-410B-B1B9-00008EBCA797");
+
+            call.enqueue(new Callback<dataBean>() {
+                @Override
+                public void onResponse(Call<dataBean> call, Response<dataBean> response) {
+
+                    title.setText(response.body().getR().getCT());
+                    title.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+                    author.setText(response.body().getR().getPoet().getPN());
+                    author.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+
+                    String ddata = response.body().getR().getCR();
+
+                    try {
+                        JSONObject jsonObject = new JSONObject(ddata);
+
+
+                        JSONArray paraArray = jsonObject.getJSONArray("P");
+
+                        LinearLayout con = new LinearLayout(MainActivity.this);
+                        con.setOrientation(LinearLayout.VERTICAL);
+                        con.setGravity(Gravity.CENTER_HORIZONTAL);
+
+                        for (int i = 0 ; i < paraArray.length() ; i++)
+                        {
+
+
+
+                            JSONObject pobj = paraArray.getJSONObject(i);
+                            JSONArray lineArray = pobj.getJSONArray("L");
+
+                            LinearLayout para = new LinearLayout(MainActivity.this);
+                            para.setOrientation(LinearLayout.VERTICAL);
+                            para.setGravity(Gravity.CENTER_HORIZONTAL);
+                            para.setPadding(5 , 10 , 5 , 10);
+
+                            for (int j = 0 ; j < lineArray.length() ; j++)
+                            {
+
+                                JSONObject lobj = lineArray.getJSONObject(j);
+
+                                JSONArray wordArray = lobj.getJSONArray("W");
+
+                                //String line = "";
+
+                                LinearLayout line = new LinearLayout(MainActivity.this);
+                                line.setOrientation(LinearLayout.HORIZONTAL);
+                                line.setGravity(Gravity.CENTER_HORIZONTAL);
+                                line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
+                                line.setPadding(5 , 10 , 5 , 10);
+
+                                for (int k = 0 ; k < wordArray.length() ; k++)
+                                {
+
+                                    JSONObject wordwrap = wordArray.getJSONObject(k);
+
+                                    final String wo = wordwrap.getString("W");
+
+                                    TextView word = new TextView(MainActivity.this);
+                                    word.setPadding(5 , 0 , 5 , 0);
+                                    word.setText(wo);
+
+                                    word.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            toast.setText("word: " + wo);
+                                            toast.show();
+                                        }
+                                    });
+
+                                    line.addView(word);
+
+                                }
+
+
+
+
+
+                                para.addView(line);
+
+
+
+                                Log.d("asdasd" , line + "\n");
+
+                            }
+
+                            final int finalI = i;
+                            para.setOnLongClickListener(new View.OnLongClickListener() {
+                                @Override
+                                public boolean onLongClick(View view) {
+
+                                    toast.setText("para pressed: " + String.valueOf(finalI +1));
+
+                                    toast.show();
+                                    return true;
+                                }
+                            });
+
+                            con.addView(para);
+
+                            Log.d("asdasd" , "\n");
+
+                        }
+
+
+                        content.addView(con);
+
+                        progress.setVisibility(View.GONE);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        progress.setVisibility(View.GONE);
+                    }
+
+
+
+
+
+                    Log.d("asdasd" , ddata);
+
+                    String formattedData = ddata.replaceAll("\\/" , ddata);
+
+                    Log.d("asdasd" , formattedData);
+
+                }
+
+                @Override
+                public void onFailure(Call<dataBean> call, Throwable throwable) {
+
+                    progress.setVisibility(View.GONE);
+
+                }
+            });
+        }
+        else if (id == R.id.ur)
+        {
+            content.removeAllViews();
+
+            progress.setVisibility(View.VISIBLE);
+
+            Retrofit retrofit = new Retrofit.Builder()
+                    .baseUrl("http://14.140.111.4:20002")
+                    .addConverterFactory(ScalarsConverterFactory.create())
+                    .addConverterFactory(GsonConverterFactory.create())
+                    .build();
+
+            AllAPIs cr = retrofit.create(AllAPIs.class);
+
+
+            Call<dataBean> call = cr.getData("3" , "827D3643-BCC4-410B-B1B9-00008EBCA797");
+
+            call.enqueue(new Callback<dataBean>() {
+                @Override
+                public void onResponse(Call<dataBean> call, Response<dataBean> response) {
+
+                    title.setText(response.body().getR().getCT());
+                    title.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+
+                    author.setText(response.body().getR().getPoet().getPN());
+                    author.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+
+                    String ddata = response.body().getR().getCR();
+
+                    try {
+                        JSONObject jsonObject = new JSONObject(ddata);
+
+
+                        JSONArray paraArray = jsonObject.getJSONArray("P");
+
+                        LinearLayout con = new LinearLayout(MainActivity.this);
+                        con.setOrientation(LinearLayout.VERTICAL);
+                        con.setGravity(Gravity.CENTER_HORIZONTAL);
+
+                        for (int i = 0 ; i < paraArray.length() ; i++)
+                        {
+
+
+
+                            JSONObject pobj = paraArray.getJSONObject(i);
+                            JSONArray lineArray = pobj.getJSONArray("L");
+
+                            LinearLayout para = new LinearLayout(MainActivity.this);
+                            para.setOrientation(LinearLayout.VERTICAL);
+                            para.setGravity(Gravity.CENTER_HORIZONTAL);
+                            para.setPadding(5 , 10 , 5 , 10);
+
+                            for (int j = 0 ; j < lineArray.length() ; j++)
+                            {
+
+                                JSONObject lobj = lineArray.getJSONObject(j);
+
+                                JSONArray wordArray = lobj.getJSONArray("W");
+
+                                //String line = "";
+
+                                LinearLayout line = new LinearLayout(MainActivity.this);
+                                line.setOrientation(LinearLayout.HORIZONTAL);
+                                line.setGravity(Gravity.CENTER_HORIZONTAL);
+                                line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
+                                line.setPadding(5 , 10 , 5 , 10);
+
+                                for (int k = 0 ; k < wordArray.length() ; k++)
+                                {
+
+                                    JSONObject wordwrap = wordArray.getJSONObject(k);
+
+                                    final String wo = wordwrap.getString("W");
+
+                                    TextView word = new TextView(MainActivity.this);
+                                    word.setPadding(5 , 0 , 5 , 0);
+                                    word.setText(wo);
+
+                                    word.setOnClickListener(new View.OnClickListener() {
+                                        @Override
+                                        public void onClick(View view) {
+                                            toast.setText("word: " + wo);
+                                            toast.show();
+                                        }
+                                    });
+
+                                    line.addView(word);
+
+                                }
+
+
+
+
+
+                                para.addView(line);
+
+
+
+                                Log.d("asdasd" , line + "\n");
+
+                            }
+
+                            final int finalI = i;
+                            para.setOnLongClickListener(new View.OnLongClickListener() {
+                                @Override
+                                public boolean onLongClick(View view) {
+
+                                    toast.setText("para pressed: " + String.valueOf(finalI +1));
+
+                                    toast.show();
+                                    return true;
+                                }
+                            });
+
+                            con.addView(para);
+
+                            Log.d("asdasd" , "\n");
+
+                        }
+
+
+                        content.addView(con);
+
+                        progress.setVisibility(View.GONE);
+
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        progress.setVisibility(View.GONE);
+                    }
+
+
+
+
+
+                    Log.d("asdasd" , ddata);
+
+                    String formattedData = ddata.replaceAll("\\/" , ddata);
+
+                    Log.d("asdasd" , formattedData);
+
+                }
+
+                @Override
+                public void onFailure(Call<dataBean> call, Throwable throwable) {
+
+                    progress.setVisibility(View.GONE);
+
+                }
+            });
+        }
 
         return true;
 
