@@ -4,18 +4,25 @@ import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.support.v4.widget.NestedScrollView;
 import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
+import android.view.MotionEvent;
+import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewTreeObserver;
+import android.view.animation.ScaleAnimation;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
+import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -25,6 +32,7 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import pl.polidea.view.ZoomView;
 import retrofit2.Call;
 import retrofit2.Callback;
 import retrofit2.Response;
@@ -40,11 +48,19 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout content;
     Toast toast;
     ProgressBar progress;
-    TextView title , author;
+    LinearLayout scrollContainer;
+    NestedScrollView scroll;
+    TextView title, author;
 
     int flag = 1;
 
-    LinearLayout gh1 , gh2 , gh3 , gh4 , gh5 , gh6;
+
+    private float mScale = 1f;
+    private ScaleGestureDetector mScaleDetector;
+    GestureDetector gestureDetector;
+
+
+    LinearLayout gh1, gh2, gh3, gh4, gh5, gh6;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -52,20 +68,22 @@ public class MainActivity extends AppCompatActivity {
         setContentView(R.layout.activity_main);
 
         content = (LinearLayout) findViewById(R.id.content);
-        toolbar = (Toolbar)findViewById(R.id.toolbar);
-        title = (TextView)findViewById(R.id.title);
-        author = (TextView)findViewById(R.id.author);
+        toolbar = (Toolbar) findViewById(R.id.toolbar);
+        title = (TextView) findViewById(R.id.title);
+        author = (TextView) findViewById(R.id.author);
+        scroll = (NestedScrollView)findViewById(R.id.scroll);
+        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
 
-        gh1 = (LinearLayout)findViewById(R.id.ghz1);
-        gh2 = (LinearLayout)findViewById(R.id.ghz2);
-        gh3 = (LinearLayout)findViewById(R.id.ghz3);
-        gh4 = (LinearLayout)findViewById(R.id.ghz4);
-        gh5 = (LinearLayout)findViewById(R.id.ghz5);
-        gh6 = (LinearLayout)findViewById(R.id.ghz6);
+        gh1 = (LinearLayout) findViewById(R.id.ghz1);
+        gh2 = (LinearLayout) findViewById(R.id.ghz2);
+        gh3 = (LinearLayout) findViewById(R.id.ghz3);
+        gh4 = (LinearLayout) findViewById(R.id.ghz4);
+        gh5 = (LinearLayout) findViewById(R.id.ghz5);
+        gh6 = (LinearLayout) findViewById(R.id.ghz6);
 
-        progress = (ProgressBar)findViewById(R.id.progress);
+        progress = (ProgressBar) findViewById(R.id.progress);
 
-        toast = Toast.makeText(this , null , Toast.LENGTH_SHORT);
+        toast = Toast.makeText(this, null, Toast.LENGTH_SHORT);
 
         setSupportActionBar(toolbar);
 
@@ -79,7 +97,7 @@ public class MainActivity extends AppCompatActivity {
 
         drawer = (DrawerLayout) findViewById(R.id.drawer);
         ActionBarDrawerToggle toggle = new ActionBarDrawerToggle(
-                this, drawer, toolbar, R.string.navigation_drawer_open , R.string.navigation_drawer_close);
+                this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
         content.removeAllViews();
@@ -95,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-        Call<dataBean> call = cr.getData("1" , "827D3643-BCC4-410B-B1B9-00008EBCA797");
+        Call<dataBean> call = cr.getData("1", "827D3643-BCC4-410B-B1B9-00008EBCA797");
 
         call.enqueue(new Callback<dataBean>() {
             @Override
@@ -119,9 +137,7 @@ public class MainActivity extends AppCompatActivity {
                     con.setOrientation(LinearLayout.VERTICAL);
                     con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                    for (int i = 0 ; i < paraArray.length() ; i++)
-                    {
-
+                    for (int i = 0; i < paraArray.length(); i++) {
 
 
                         JSONObject pobj = paraArray.getJSONObject(i);
@@ -130,10 +146,9 @@ public class MainActivity extends AppCompatActivity {
                         LinearLayout para = new LinearLayout(MainActivity.this);
                         para.setOrientation(LinearLayout.VERTICAL);
                         para.setGravity(Gravity.CENTER_HORIZONTAL);
-                        para.setPadding(5 , 10 , 5 , 10);
+                        para.setPadding(5, 10, 5, 10);
 
-                        for (int j = 0 ; j < lineArray.length() ; j++)
-                        {
+                        for (int j = 0; j < lineArray.length(); j++) {
 
                             JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -145,17 +160,16 @@ public class MainActivity extends AppCompatActivity {
                             line.setOrientation(LinearLayout.HORIZONTAL);
                             line.setGravity(Gravity.CENTER_HORIZONTAL);
                             line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                            line.setPadding(5 , 10 , 5 , 10);
+                            line.setPadding(5, 10, 5, 10);
 
-                            for (int k = 0 ; k < wordArray.length() ; k++)
-                            {
+                            for (int k = 0; k < wordArray.length(); k++) {
 
                                 JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                 final String wo = wordwrap.getString("W");
 
                                 TextView word = new TextView(MainActivity.this);
-                                word.setPadding(5 , 0 , 5 , 0);
+                                word.setPadding(5, 0, 5, 0);
                                 word.setText(wo);
 
                                 word.setOnClickListener(new View.OnClickListener() {
@@ -170,15 +184,57 @@ public class MainActivity extends AppCompatActivity {
 
                             }
 
+                            int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                            final int[] wordwidth = {0};
+
+                            for (int m = 0 ; m < line.getChildCount() ; m++)
+                            {
+
+                                final View v = line.getChildAt(m);
+
+
+                                v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                    @Override
+                                    public void onGlobalLayout() {
+                                        v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                        wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                        Log.d("asd" , String.valueOf(v.getWidth()));
+                                    }
+                                });
 
 
 
+
+
+                            }
+
+                            int emptySpace = maxwidth - wordwidth[0];
+
+                            float space = emptySpace / (line.getChildCount() + 1);
+
+                            float netspace = space / 2;
+
+                            for (int m = 0 ; m < line.getChildCount() ; m++)
+                            {
+
+
+                                    View v = line.getChildAt(m);
+                                    v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+
+                            }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
 
                             para.addView(line);
 
 
-
-                            Log.d("asdasd" , line + "\n");
+                            Log.d("asdasd", line + "\n");
 
                         }
 
@@ -187,7 +243,7 @@ public class MainActivity extends AppCompatActivity {
                             @Override
                             public boolean onLongClick(View view) {
 
-                                toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                 toast.show();
                                 return true;
@@ -196,7 +252,7 @@ public class MainActivity extends AppCompatActivity {
 
                         con.addView(para);
 
-                        Log.d("asdasd" , "\n");
+                        Log.d("asdasd", "\n");
 
                     }
 
@@ -214,14 +270,11 @@ public class MainActivity extends AppCompatActivity {
                 }
 
 
+                Log.d("asdasd", ddata);
 
+                String formattedData = ddata.replaceAll("\\/", ddata);
 
-
-                Log.d("asdasd" , ddata);
-
-                String formattedData = ddata.replaceAll("\\/" , ddata);
-
-                Log.d("asdasd" , formattedData);
+                Log.d("asdasd", formattedData);
 
             }
 
@@ -232,8 +285,6 @@ public class MainActivity extends AppCompatActivity {
 
             }
         });
-
-
 
 
         gh1.setOnClickListener(new View.OnClickListener() {
@@ -251,12 +302,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "827D3643-BCC4-410B-B1B9-00008EBCA797");
+                Call<dataBean> call = cr.getData("1", "827D3643-BCC4-410B-B1B9-00008EBCA797");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -280,9 +330,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -291,10 +339,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -306,17 +353,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -332,14 +378,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -348,7 +390,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -357,7 +399,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -372,7 +414,6 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                             progress.setVisibility(View.GONE);
                         }
-
 
 
                     }
@@ -392,7 +433,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
         gh2.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -408,12 +448,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "FC75E922-FD23-4510-B8AE-00263E506E1E");
+                Call<dataBean> call = cr.getData("1", "FC75E922-FD23-4510-B8AE-00263E506E1E");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -435,9 +474,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -446,10 +483,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -461,17 +497,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -487,14 +522,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -503,7 +534,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -512,7 +543,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -546,7 +577,6 @@ public class MainActivity extends AppCompatActivity {
         });
 
 
-
         gh3.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
@@ -562,7 +592,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
+                Call<dataBean> call = cr.getData("1", "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -589,9 +619,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -600,10 +628,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -615,17 +642,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -641,14 +667,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -657,7 +679,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -666,7 +688,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -681,7 +703,6 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                             progress.setVisibility(View.GONE);
                         }
-
 
 
                     }
@@ -715,7 +736,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
+                Call<dataBean> call = cr.getData("1", "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -742,9 +763,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.END);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -753,10 +772,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.END);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -768,17 +786,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.END);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -794,14 +811,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -810,7 +823,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -819,7 +832,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -834,11 +847,6 @@ public class MainActivity extends AppCompatActivity {
                             e.printStackTrace();
                             progress.setVisibility(View.GONE);
                         }
-
-
-
-
-
 
 
                     }
@@ -872,7 +880,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
+                Call<dataBean> call = cr.getData("1", "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -897,9 +905,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -908,10 +914,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -923,17 +928,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -949,14 +953,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -965,7 +965,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -974,7 +974,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -1021,12 +1021,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
+                Call<dataBean> call = cr.getData("1", "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -1048,9 +1047,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -1059,10 +1056,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -1074,17 +1070,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -1100,14 +1095,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -1116,7 +1107,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -1125,7 +1116,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -1159,15 +1150,54 @@ public class MainActivity extends AppCompatActivity {
 
 
 
+        /*gestureDetector = new GestureDetector(this, new GestureListener());
+
+// animation for scalling
+        mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener()
+        {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector)
+            {
+                float scale = 1 - detector.getScaleFactor();
+
+                float prevScale = mScale;
+                mScale += scale;
+
+                if (mScale < 0.1f) // Minimum scale condition:
+                    mScale = 0.1f;
+
+                if (mScale > 10f) // Maximum scale condition:
+                    mScale = 10f;
+                ScaleAnimation scaleAnimation = new ScaleAnimation(1f / prevScale, 1f / mScale, 1f / prevScale, 1f / mScale, detector.getFocusX(), detector.getFocusY());
+                scaleAnimation.setDuration(0);
+                scaleAnimation.setFillAfter(true);
+                scrollContainer.startAnimation(scaleAnimation);
+                return true;
+            }
+        });
+*/
+
+// step 3: override dispatchTouchEvent()
+
+
 
     }
+
+
+    /*@Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        super.dispatchTouchEvent(event);
+        mScaleDetector.onTouchEvent(event);
+        gestureDetector.onTouchEvent(event);
+        return gestureDetector.onTouchEvent(event);
+    }*/
+
 
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
         MenuInflater inflater = getMenuInflater();
-        inflater.inflate(R.menu.main_menu , menu);
-
+        inflater.inflate(R.menu.main_menu, menu);
 
 
         return true;
@@ -1181,8 +1211,7 @@ public class MainActivity extends AppCompatActivity {
         int id = item.getItemId();
 
 
-        if (id == R.id.en)
-        {
+        if (id == R.id.en) {
 
             if (flag == 1) {
 
@@ -1323,9 +1352,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            }
-            else if (flag == 2)
-            {
+            } else if (flag == 2) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -1338,12 +1365,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "FC75E922-FD23-4510-B8AE-00263E506E1E");
+                Call<dataBean> call = cr.getData("1", "FC75E922-FD23-4510-B8AE-00263E506E1E");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -1365,9 +1391,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -1376,10 +1400,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -1391,17 +1414,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -1417,14 +1439,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -1433,7 +1451,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -1442,7 +1460,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -1468,9 +1486,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 3)
-            {
+            } else if (flag == 3) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -1483,7 +1499,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
+                Call<dataBean> call = cr.getData("1", "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -1510,9 +1526,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -1521,10 +1535,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -1536,17 +1549,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -1562,14 +1574,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -1578,7 +1586,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -1587,7 +1595,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -1604,7 +1612,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-
                     }
 
                     @Override
@@ -1615,9 +1622,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            }
-            else if (flag == 4)
-            {
+            } else if (flag == 4) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -1630,7 +1635,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
+                Call<dataBean> call = cr.getData("1", "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -1657,9 +1662,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.END);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -1668,10 +1671,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.END);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -1683,17 +1685,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.END);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -1709,14 +1710,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -1725,7 +1722,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -1734,7 +1731,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -1751,11 +1748,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-
-
-
-
-
                     }
 
                     @Override
@@ -1765,9 +1757,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 5)
-            {
+            } else if (flag == 5) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -1780,7 +1770,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
+                Call<dataBean> call = cr.getData("1", "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -1805,9 +1795,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -1816,10 +1804,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -1831,17 +1818,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -1857,14 +1843,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -1873,7 +1855,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -1882,7 +1864,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -1907,9 +1889,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 6)
-            {
+            } else if (flag == 6) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -1922,12 +1902,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("1" , "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
+                Call<dataBean> call = cr.getData("1", "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -1949,9 +1928,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -1960,10 +1937,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -1975,17 +1951,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -2001,14 +1976,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -2017,7 +1988,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -2026,7 +1997,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -2054,10 +2025,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
-
-        }
-        else if (id == R.id.hi)
-        {
+        } else if (id == R.id.hi) {
 
             if (flag == 1) {
 
@@ -2198,11 +2166,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            }
-
-
-            else if (flag == 2)
-            {
+            } else if (flag == 2) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -2215,12 +2179,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("2" , "FC75E922-FD23-4510-B8AE-00263E506E1E");
+                Call<dataBean> call = cr.getData("2", "FC75E922-FD23-4510-B8AE-00263E506E1E");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -2242,9 +2205,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -2253,10 +2214,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -2268,17 +2228,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -2294,14 +2253,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -2310,7 +2265,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -2319,7 +2274,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -2345,9 +2300,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 3)
-            {
+            } else if (flag == 3) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -2360,7 +2313,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("2" , "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
+                Call<dataBean> call = cr.getData("2", "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -2387,9 +2340,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -2398,10 +2349,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -2413,17 +2363,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -2439,14 +2388,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -2455,7 +2400,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -2464,7 +2409,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -2481,7 +2426,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-
                     }
 
                     @Override
@@ -2492,9 +2436,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            }
-            else if (flag == 4)
-            {
+            } else if (flag == 4) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -2507,7 +2449,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("2" , "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
+                Call<dataBean> call = cr.getData("2", "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -2534,9 +2476,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.END);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -2545,10 +2485,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.END);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -2560,17 +2499,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.END);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -2586,14 +2524,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -2602,7 +2536,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -2611,7 +2545,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -2628,11 +2562,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-
-
-
-
-
                     }
 
                     @Override
@@ -2642,9 +2571,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 5)
-            {
+            } else if (flag == 5) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -2657,7 +2584,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("2" , "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
+                Call<dataBean> call = cr.getData("2", "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -2682,9 +2609,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -2693,10 +2618,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -2708,17 +2632,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -2734,14 +2657,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -2750,7 +2669,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -2759,7 +2678,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -2784,9 +2703,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 6)
-            {
+            } else if (flag == 6) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -2799,12 +2716,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("2" , "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
+                Call<dataBean> call = cr.getData("2", "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -2826,9 +2742,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -2837,10 +2751,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -2852,17 +2765,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -2878,14 +2790,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -2894,7 +2802,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -2903,7 +2811,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -2931,9 +2839,7 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
-        }
-        else if (id == R.id.ur)
-        {
+        } else if (id == R.id.ur) {
 
             if (flag == 1) {
 
@@ -3074,11 +2980,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-
-
-            else if (flag == 2)
-            {
+            } else if (flag == 2) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -3091,12 +2993,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("3" , "FC75E922-FD23-4510-B8AE-00263E506E1E");
+                Call<dataBean> call = cr.getData("3", "FC75E922-FD23-4510-B8AE-00263E506E1E");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -3118,9 +3019,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -3129,10 +3028,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -3144,17 +3042,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -3170,14 +3067,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -3186,7 +3079,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -3195,7 +3088,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -3221,9 +3114,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 3)
-            {
+            } else if (flag == 3) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -3236,7 +3127,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("3" , "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
+                Call<dataBean> call = cr.getData("3", "5566AE8C-00A1-4AAE-8CDFCA09DB728342");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -3263,9 +3154,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -3274,10 +3163,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -3289,17 +3177,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -3315,14 +3202,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -3331,7 +3214,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -3340,7 +3223,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -3357,7 +3240,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-
                     }
 
                     @Override
@@ -3368,9 +3250,7 @@ public class MainActivity extends AppCompatActivity {
                     }
                 });
 
-            }
-            else if (flag == 4)
-            {
+            } else if (flag == 4) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -3383,7 +3263,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("3" , "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
+                Call<dataBean> call = cr.getData("3", "CE328811-2C4C-42D1-B685-A9ADC9D97EF3");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -3410,9 +3290,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -3421,10 +3299,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -3436,17 +3313,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -3462,14 +3338,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -3478,7 +3350,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -3487,7 +3359,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -3504,11 +3376,6 @@ public class MainActivity extends AppCompatActivity {
                         }
 
 
-
-
-
-
-
                     }
 
                     @Override
@@ -3518,9 +3385,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 5)
-            {
+            } else if (flag == 5) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -3533,7 +3398,7 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("3" , "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
+                Call<dataBean> call = cr.getData("3", "B86C1FBE-2C5A-4A75-BFCE-007580A1451D");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
@@ -3558,9 +3423,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.START);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -3569,10 +3432,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.START);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -3584,17 +3446,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -3610,14 +3471,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -3626,7 +3483,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -3635,7 +3492,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -3660,9 +3517,7 @@ public class MainActivity extends AppCompatActivity {
 
                     }
                 });
-            }
-            else if (flag == 6)
-            {
+            } else if (flag == 6) {
                 content.removeAllViews();
                 progress.setVisibility(View.VISIBLE);
 
@@ -3675,12 +3530,11 @@ public class MainActivity extends AppCompatActivity {
                 AllAPIs cr = retrofit.create(AllAPIs.class);
 
 
-                Call<dataBean> call = cr.getData("3" , "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
+                Call<dataBean> call = cr.getData("3", "EEBC8F15-6904-49A9-BFE4-6E76E71E28BB");
 
                 call.enqueue(new Callback<dataBean>() {
                     @Override
                     public void onResponse(Call<dataBean> call, Response<dataBean> response) {
-
 
 
                         try {
@@ -3702,9 +3556,7 @@ public class MainActivity extends AppCompatActivity {
                             con.setOrientation(LinearLayout.VERTICAL);
                             con.setGravity(Gravity.CENTER_HORIZONTAL);
 
-                            for (int i = 0 ; i < paraArray.length() ; i++)
-                            {
-
+                            for (int i = 0; i < paraArray.length(); i++) {
 
 
                                 JSONObject pobj = paraArray.getJSONObject(i);
@@ -3713,10 +3565,9 @@ public class MainActivity extends AppCompatActivity {
                                 LinearLayout para = new LinearLayout(MainActivity.this);
                                 para.setOrientation(LinearLayout.VERTICAL);
                                 para.setGravity(Gravity.CENTER_HORIZONTAL);
-                                para.setPadding(5 , 10 , 5 , 10);
+                                para.setPadding(5, 10, 5, 10);
 
-                                for (int j = 0 ; j < lineArray.length() ; j++)
-                                {
+                                for (int j = 0; j < lineArray.length(); j++) {
 
                                     JSONObject lobj = lineArray.getJSONObject(j);
 
@@ -3728,17 +3579,16 @@ public class MainActivity extends AppCompatActivity {
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
-                                    line.setPadding(5 , 10 , 5 , 10);
+                                    line.setPadding(5, 10, 5, 10);
 
-                                    for (int k = 0 ; k < wordArray.length() ; k++)
-                                    {
+                                    for (int k = 0; k < wordArray.length(); k++) {
 
                                         JSONObject wordwrap = wordArray.getJSONObject(k);
 
                                         final String wo = wordwrap.getString("W");
 
                                         TextView word = new TextView(MainActivity.this);
-                                        word.setPadding(5 , 0 , 5 , 0);
+                                        word.setPadding(5, 0, 5, 0);
                                         word.setText(wo);
 
                                         word.setOnClickListener(new View.OnClickListener() {
@@ -3754,14 +3604,10 @@ public class MainActivity extends AppCompatActivity {
                                     }
 
 
-
-
-
                                     para.addView(line);
 
 
-
-                                    Log.d("asdasd" , line + "\n");
+                                    Log.d("asdasd", line + "\n");
 
                                 }
 
@@ -3770,7 +3616,7 @@ public class MainActivity extends AppCompatActivity {
                                     @Override
                                     public boolean onLongClick(View view) {
 
-                                        toast.setText("para pressed: " + String.valueOf(finalI +1));
+                                        toast.setText("para pressed: " + String.valueOf(finalI + 1));
 
                                         toast.show();
                                         return true;
@@ -3779,7 +3625,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 con.addView(para);
 
-                                Log.d("asdasd" , "\n");
+                                Log.d("asdasd", "\n");
 
                             }
 
@@ -3807,11 +3653,27 @@ public class MainActivity extends AppCompatActivity {
             }
 
 
-
         }
 
         return true;
 
 
     }
+
+
+    private class GestureListener extends GestureDetector.SimpleOnGestureListener {
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return true;
+        }
+
+        // event when double tap occurs
+        @Override
+        public boolean onDoubleTap(MotionEvent e) {
+            // double tap fired.
+            return true;
+        }
+    }
+
+
 }
