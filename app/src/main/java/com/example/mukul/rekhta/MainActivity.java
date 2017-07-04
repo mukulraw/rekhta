@@ -143,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
                         JSONObject pobj = paraArray.getJSONObject(i);
                         JSONArray lineArray = pobj.getJSONArray("L");
 
-                        LinearLayout para = new LinearLayout(MainActivity.this);
+                        final LinearLayout para = new LinearLayout(MainActivity.this);
                         para.setOrientation(LinearLayout.VERTICAL);
                         para.setGravity(Gravity.CENTER_HORIZONTAL);
                         para.setPadding(5, 10, 5, 10);
@@ -156,7 +156,7 @@ public class MainActivity extends AppCompatActivity {
 
                             //String line = "";
 
-                            LinearLayout line = new LinearLayout(MainActivity.this);
+                            final LinearLayout line = new LinearLayout(MainActivity.this);
                             line.setOrientation(LinearLayout.HORIZONTAL);
                             line.setGravity(Gravity.CENTER_HORIZONTAL);
                             line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -184,9 +184,11 @@ public class MainActivity extends AppCompatActivity {
 
                             }
 
-                            int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+                            final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
 
                             final int[] wordwidth = {0};
+
+                            Log.d("asdCount" , String.valueOf(line.getChildCount()));
 
                             for (int m = 0 ; m < line.getChildCount() ; m++)
                             {
@@ -194,6 +196,7 @@ public class MainActivity extends AppCompatActivity {
                                 final View v = line.getChildAt(m);
 
 
+                                final int finalM = m;
                                 v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
                                     @Override
                                     public void onGlobalLayout() {
@@ -202,16 +205,55 @@ public class MainActivity extends AppCompatActivity {
                                         wordwidth[0] = wordwidth[0] + v.getWidth();
 
                                         Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                        if (finalM == line.getChildCount()-1)
+                                        {
+
+                                            int emptySpace = maxwidth - wordwidth[0];
+
+                                            Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                            Log.d("empty" , String.valueOf(emptySpace));
+
+                                            float space = emptySpace / (line.getChildCount() + 1);
+
+                                            float netspace = space / 2;
+
+                                            for (int m = 0 ; m < line.getChildCount() ; m++)
+                                            {
+
+
+                                                View v = line.getChildAt(m);
+                                                v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+
+                                            }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                        }
+
                                     }
                                 });
 
 
 
 
-
                             }
 
-                            int emptySpace = maxwidth - wordwidth[0];
+                            Log.d("maxWidth" , String.valueOf(maxwidth));
+
+                            para.addView(line);
+
+                            /*int emptySpace = maxwidth - wordwidth[0];
+
+                            Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                            Log.d("empty" , String.valueOf(emptySpace));
 
                             float space = emptySpace / (line.getChildCount() + 1);
 
@@ -231,7 +273,7 @@ public class MainActivity extends AppCompatActivity {
 
 //                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
 
-                            para.addView(line);
+                            para.addView(line);*/
 
 
                             Log.d("asdasd", line + "\n");
