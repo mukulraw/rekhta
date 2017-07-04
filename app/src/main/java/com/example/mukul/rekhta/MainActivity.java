@@ -1,5 +1,6 @@
 package com.example.mukul.rekhta;
 
+import android.graphics.Color;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
@@ -10,6 +11,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
 import android.util.Log;
+import android.util.TypedValue;
 import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.Menu;
@@ -47,14 +49,14 @@ public class MainActivity extends AppCompatActivity {
     LinearLayout layout;
     DrawerLayout drawer;
     LinearLayout content;
+    ScaleGestureDetector scaleGD;
     Toast toast;
     ProgressBar progress;
     LinearLayout scrollContainer;
-    NestedScrollView scroll;
+    //NestedScrollView scroll;
     TextView title, author;
 
     int flag = 1;
-
 
     private float mScale = 1f;
     private ScaleGestureDetector mScaleDetector;
@@ -68,12 +70,42 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+//        gestureDetector = new GestureDetector(this, new GestureListener());
+
+        scaleGD = new ScaleGestureDetector(this, new simpleOnScaleGestureListener());
+
         content = (LinearLayout) findViewById(R.id.content);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         title = (TextView) findViewById(R.id.title);
         author = (TextView) findViewById(R.id.author);
-        scroll = (NestedScrollView)findViewById(R.id.scroll);
-        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
+        //scroll = (NestedScrollView)findViewById(R.id.scroll);
+//        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
+/*
+
+        mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                float scale = 1 - detector.getScaleFactor();
+
+                float prevScale = mScale;
+                mScale += scale;
+
+                if (mScale < 0.1f) // Minimum scale condition:
+                    mScale = 0.1f;
+
+                if (mScale > 10f) // Maximum scale condition:
+                    mScale = 10f;
+                ScaleAnimation scaleAnimation = new ScaleAnimation(1f / prevScale, 1f / mScale, 1f / prevScale, 1f / mScale, detector.getFocusX(), detector.getFocusY());
+                scaleAnimation.setDuration(0);
+                scaleAnimation.setFillAfter(true);
+
+                //scroll.startAnimation(scaleAnimation);
+                //horizontalScrollView.startAnimation(scaleAnimation);
+                return true;
+            }
+        });
+*/
+
 
         gh1 = (LinearLayout) findViewById(R.id.ghz1);
         gh2 = (LinearLayout) findViewById(R.id.ghz2);
@@ -101,6 +133,16 @@ public class MainActivity extends AppCompatActivity {
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
+
+
+
+
+
+
+
+
+
+
         content.removeAllViews();
 
         progress.setVisibility(View.VISIBLE);
@@ -171,6 +213,7 @@ public class MainActivity extends AppCompatActivity {
 
                                 TextView word = new TextView(MainActivity.this);
                                 word.setPadding(5, 0, 5, 0);
+                                word.setBackgroundColor(Color.TRANSPARENT);
                                 word.setText(wo);
 
                                 word.setOnClickListener(new View.OnClickListener() {
@@ -1225,6 +1268,11 @@ public class MainActivity extends AppCompatActivity {
 */
 
 // step 3: override dispatchTouchEvent()
+
+
+        //com.example.mukul.rekhta.ZoomView zv = new com.example.mukul.rekhta.ZoomView(MainActivity.this);
+
+
 
 
 
@@ -3708,6 +3756,39 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
+    public class simpleOnScaleGestureListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
+
+        @Override
+        public boolean onScale(ScaleGestureDetector detector) {
+            //float size = codedText.getTextSize();
+            float factor = detector.getScaleFactor();
+            int increase = 0;
+            if(factor > 1.0f)
+                increase = 2;
+            else if(factor < 1.0f)
+                increase = -2;
+
+            try {
+                Thread.sleep(200);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            //remembering the favourable text size
+
+            return true;
+        }
+    }
+
+
+    /*@Override
+    public boolean dispatchTouchEvent(MotionEvent event) {
+        super.dispatchTouchEvent(event);
+        mScaleDetector.onTouchEvent(event);
+        gestureDetector.onTouchEvent(event);
+        return gestureDetector.onTouchEvent(event);
+    }
+
+
     private class GestureListener extends GestureDetector.SimpleOnGestureListener {
         @Override
         public boolean onDown(MotionEvent e) {
@@ -3720,7 +3801,7 @@ public class MainActivity extends AppCompatActivity {
             // double tap fired.
             return true;
         }
-    }
+    }*/
 
 
 }
