@@ -23,6 +23,7 @@ import android.view.animation.ScaleAnimation;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
+import android.widget.Space;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -249,6 +250,7 @@ public class MainActivity extends AppCompatActivity {
 
                             para.addView(line);
 
+
                             /*int emptySpace = maxwidth - wordwidth[0];
 
                             Log.d("wordWidth" , String.valueOf(wordwidth[0]));
@@ -293,6 +295,9 @@ public class MainActivity extends AppCompatActivity {
                         });
 
                         con.addView(para);
+                        Space ap = new Space(MainActivity.this);
+                        ap.setMinimumHeight(30);
+                        con.addView(ap);
 
                         Log.d("asdasd", "\n");
 
