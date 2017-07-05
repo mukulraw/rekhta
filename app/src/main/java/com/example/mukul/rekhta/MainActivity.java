@@ -224,6 +224,8 @@ public class MainActivity extends AppCompatActivity {
                                 word.setBackgroundColor(Color.TRANSPARENT);
                                 word.setText(wo);
 
+
+
                                 word.setOnClickListener(new View.OnClickListener() {
                                     @Override
                                     public void onClick(View view) {
