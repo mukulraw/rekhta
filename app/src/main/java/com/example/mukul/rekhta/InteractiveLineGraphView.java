@@ -21,13 +21,12 @@ import android.view.GestureDetector;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewGroup;
+import android.widget.LinearLayout;
 import android.widget.OverScroller;
 
-/**
- * Created by mukul on 04/07/17.
- */
 
-public class InteractiveLineGraphView extends View {
+public class InteractiveLineGraphView extends LinearLayout {
     private static final String TAG = "InteractiveLineGraphView";
 
     /**
@@ -151,36 +150,6 @@ public class InteractiveLineGraphView extends View {
     public InteractiveLineGraphView(Context context, AttributeSet attrs, int defStyle) {
         super(context, attrs, defStyle);
 
-        TypedArray a = context.getTheme().obtainStyledAttributes(
-                attrs, R.styleable.InteractiveLineGraphView, defStyle, defStyle);
-
-        try {
-            mLabelTextColor = a.getColor(
-                    R.styleable.InteractiveLineGraphView_labelTextColor, mLabelTextColor);
-            mLabelTextSize = a.getDimension(
-                    R.styleable.InteractiveLineGraphView_labelTextSize, mLabelTextSize);
-            mLabelSeparation = a.getDimensionPixelSize(
-                    R.styleable.InteractiveLineGraphView_labelSeparation, mLabelSeparation);
-
-            mGridThickness = a.getDimension(
-                    R.styleable.InteractiveLineGraphView_gridThickness, mGridThickness);
-            mGridColor = a.getColor(
-                    R.styleable.InteractiveLineGraphView_gridColor, mGridColor);
-
-            mAxisThickness = a.getDimension(
-                    R.styleable.InteractiveLineGraphView_axisThickness, mAxisThickness);
-            mAxisColor = a.getColor(
-                    R.styleable.InteractiveLineGraphView_axisColor, mAxisColor);
-
-            mDataThickness = a.getDimension(
-                    R.styleable.InteractiveLineGraphView_dataThickness, mDataThickness);
-            mDataColor = a.getColor(
-                    R.styleable.InteractiveLineGraphView_dataColor, mDataColor);
-        } finally {
-            a.recycle();
-        }
-
-        initPaints();
 
         // Sets up interactions
         mScaleGestureDetector = new ScaleGestureDetector(context, mScaleGestureListener);
@@ -196,33 +165,15 @@ public class InteractiveLineGraphView extends View {
         mEdgeEffectBottom = new EdgeEffectCompat(context);
     }
 
+    @Override
+    protected void onLayout(boolean changed, int l, int t, int r, int b) {
+
+    }
+
     /**
      * (Re)initializes {@link Paint} objects based on current attribute values.
      */
-    private void initPaints() {
-        mLabelTextPaint = new Paint();
-        mLabelTextPaint.setAntiAlias(true);
-        mLabelTextPaint.setTextSize(mLabelTextSize);
-        mLabelTextPaint.setColor(mLabelTextColor);
-        mLabelHeight = (int) Math.abs(mLabelTextPaint.getFontMetrics().top);
-        mMaxLabelWidth = (int) mLabelTextPaint.measureText("0000");
 
-        mGridPaint = new Paint();
-        mGridPaint.setStrokeWidth(mGridThickness);
-        mGridPaint.setColor(mGridColor);
-        mGridPaint.setStyle(Paint.Style.STROKE);
-
-        mAxisPaint = new Paint();
-        mAxisPaint.setStrokeWidth(mAxisThickness);
-        mAxisPaint.setColor(mAxisColor);
-        mAxisPaint.setStyle(Paint.Style.STROKE);
-
-        mDataPaint = new Paint();
-        mDataPaint.setStrokeWidth(mDataThickness);
-        mDataPaint.setColor(mDataColor);
-        mDataPaint.setStyle(Paint.Style.STROKE);
-        mDataPaint.setAntiAlias(true);
-    }
 
     @Override
     protected void onSizeChanged(int w, int h, int oldw, int oldh) {
@@ -259,7 +210,7 @@ public class InteractiveLineGraphView extends View {
         super.onDraw(canvas);
 
         // Draws axes and text labels
-        drawAxes(canvas);
+        //drawAxes(canvas);
 
         // Clips the next few drawing operations to the content area
         int clipRestoreCount = canvas.save();
@@ -272,13 +223,13 @@ public class InteractiveLineGraphView extends View {
         canvas.restoreToCount(clipRestoreCount);
 
         // Draws chart container
-        canvas.drawRect(mContentRect, mAxisPaint);
+        //canvas.drawRect(mContentRect, mAxisPaint);
     }
 
     /**
      * Draws the chart axes and labels onto the canvas.
      */
-    private void drawAxes(Canvas canvas) {
+    /*private void drawAxes(Canvas canvas) {
         // Computes axis stops (in terms of numerical value and position on screen)
         int i;
 
@@ -360,7 +311,7 @@ public class InteractiveLineGraphView extends View {
                     mAxisYPositionsBuffer[i] + mLabelHeight / 2,
                     mLabelTextPaint);
         }
-    }
+    }*/
 
     /**
      * Rounds the given number to the given number of significant digits. Based on an answer on
@@ -506,7 +457,7 @@ public class InteractiveLineGraphView extends View {
             mSeriesLinesBuffer[i * 4 + 2] = getDrawX(x);
             mSeriesLinesBuffer[i * 4 + 3] = getDrawY(fun(x));
         }
-        canvas.drawLines(mSeriesLinesBuffer, mDataPaint);
+        //canvas.drawLines(mSeriesLinesBuffer, mDataPaint);
     }
 
     /**
@@ -989,7 +940,7 @@ public class InteractiveLineGraphView extends View {
 
     public void setLabelTextSize(float labelTextSize) {
         mLabelTextSize = labelTextSize;
-        initPaints();
+        //initPaints();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
@@ -999,7 +950,7 @@ public class InteractiveLineGraphView extends View {
 
     public void setLabelTextColor(int labelTextColor) {
         mLabelTextColor = labelTextColor;
-        initPaints();
+        //initPaints();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
@@ -1009,7 +960,7 @@ public class InteractiveLineGraphView extends View {
 
     public void setGridThickness(float gridThickness) {
         mGridThickness = gridThickness;
-        initPaints();
+        //initPaints();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
@@ -1019,7 +970,7 @@ public class InteractiveLineGraphView extends View {
 
     public void setGridColor(int gridColor) {
         mGridColor = gridColor;
-        initPaints();
+        //initPaints();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
@@ -1029,7 +980,7 @@ public class InteractiveLineGraphView extends View {
 
     public void setAxisThickness(float axisThickness) {
         mAxisThickness = axisThickness;
-        initPaints();
+        //initPaints();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 
@@ -1039,7 +990,7 @@ public class InteractiveLineGraphView extends View {
 
     public void setAxisColor(int axisColor) {
         mAxisColor = axisColor;
-        initPaints();
+        //initPaints();
         ViewCompat.postInvalidateOnAnimation(this);
     }
 

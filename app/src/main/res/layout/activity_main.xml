@@ -2,13 +2,11 @@
 <android.support.v4.widget.DrawerLayout xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/drawer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:openDrawer="start"
-    android:id="@+id/drawer"
-    tools:context="com.example.mukul.rekhta.MainActivity">
-
-
+    tools:context="com.example.mukul.rekhta.MainActivity"
+    tools:openDrawer="start">
 
 
     <RelativeLayout
@@ -19,35 +17,47 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:orientation="vertical"
-            >
+            android:orientation="vertical">
 
             <android.support.v7.widget.Toolbar
+                android:id="@+id/toolbar"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:id="@+id/toolbar"
-                app:logoDescription="@string/app_name"
                 android:background="@drawable/tool_back"
-                />
-
-
+                app:logoDescription="@string/app_name" />
 
 
             <ProgressBar
                 style="@style/Widget.AppCompat.ProgressBar.Horizontal"
                 android:layout_width="match_parent"
+                android:id="@+id/progress1"
+                android:progress="70"
                 android:layout_height="1dp"
-                android:progress="50" />
+                />
 
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#ffffff"
+                android:orientation="vertical">
 
-
-                <LinearLayout
+                <ScrollView
                     android:layout_width="match_parent"
-                    android:layout_height="match_parent"
-                    android:orientation="vertical"
-                    android:background="#ffffff"
+                    android:layout_height="wrap_content"
+                    android:id="@+id/scview"
+                    android:paddingBottom="50dp"
+                    android:clipToPadding="false"
                     >
+
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:id="@+id/contain"
+                        >
+
 
                     <LinearLayout
                         android:layout_width="match_parent"
@@ -55,6 +65,7 @@
                         android:orientation="vertical">
 
                         <TextView
+                            android:id="@+id/title"
                             android:layout_width="match_parent"
                             android:layout_height="wrap_content"
                             android:gravity="center"
@@ -62,7 +73,6 @@
                             android:paddingEnd="18dp"
                             android:paddingStart="18dp"
                             android:paddingTop="10dp"
-                            android:id="@+id/title"
                             android:textColor="#000000"
                             android:textSize="20sp"
                             android:textStyle="bold" />
@@ -75,13 +85,13 @@
 
 
                             <TextView
+                                android:id="@+id/author"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
                                 android:layout_alignParentStart="true"
                                 android:layout_alignParentTop="true"
                                 android:paddingEnd="18dp"
                                 android:paddingStart="18dp"
-                                android:id="@+id/author"
                                 android:textAllCaps="true"
                                 android:textColor="#21c5ff"
                                 android:textStyle="bold" />
@@ -131,170 +141,145 @@
                         android:focusable="true"
                         android:id="@+id/scroll_container"
                         >-->
-                    <!--<com.example.mukul.rekhta.ZoomableViewGroup
+                   <!-- <com.example.mukul.rekhta.ZoomableViewGroup
                         android:layout_width="match_parent"
                         android:layout_height="match_parent">-->
 
-                    <com.example.mukul.rekhta.ZoomableViewGroup
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:id="@+id/container"
-                        >
-
-                    <com.example.mukul.rekhta.TwoDScrollView
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:id="@+id/scroll"
-                        android:paddingBottom="50dp"
-                        android:clipToPadding="false"
-                        >
-
-
-
-                    <LinearLayout
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:nestedScrollingEnabled="false"
-                        android:id="@+id/content"
-                        android:focusable="false"
-                        android:clickable="false"
-                        android:background="#00000000"
-                        android:layout_gravity="center_horizontal"
-                        android:gravity="center_horizontal"
-                        android:orientation="vertical"
-                        />
 
 
 
 
 
 
+                            <LinearLayout
+                                android:id="@+id/content"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_gravity="center_horizontal"
+                                android:background="#00000000"
+                                android:clickable="false"
+                                android:focusable="false"
+                                android:gravity="center_horizontal"
+                                android:nestedScrollingEnabled="false"
+                                android:orientation="vertical" />
 
-            </com.example.mukul.rekhta.TwoDScrollView>
-                    <!--</com.example.mukul.rekhta.ZoomableViewGroup>-->
-                    <!--</com.example.mukul.rekhta.ZoomableViewGroup>-->
 
-                    </com.example.mukul.rekhta.ZoomableViewGroup>
 
-                </LinearLayout>
 
+
+<!--
+                        </com.example.mukul.rekhta.ZoomableViewGroup>
+-->
+                        <!--</com.example.mukul.rekhta.ZoomableViewGroup>-->
+
+
+
+                    </LinearLayout>
+
+                </ScrollView>
+
+            </LinearLayout>
 
 
         </LinearLayout>
 
         <ProgressBar
+            android:id="@+id/progress"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_centerInParent="true"
-            android:id="@+id/progress"
-            android:visibility="gone"
-            />
+            android:visibility="gone" />
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
             android:layout_alignParentBottom="true"
             android:layout_centerHorizontal="true"
-            >
+            android:orientation="vertical">
 
             <TextView
                 android:layout_width="match_parent"
                 android:layout_height="1dp"
-                android:background="#ababab"
-                />
+                android:background="#ababab" />
 
-        <LinearLayout
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal"
-            android:background="#ffffff"
-            android:weightSum="7"
-            >
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:background="#ffffff"
+                android:orientation="horizontal"
+                android:weightSum="7">
 
 
-
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/dot"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/dot" />
 
 
-            <TextView
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="#ababab"
-                />
+                <TextView
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="#ababab" />
 
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/volume"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/volume" />
 
 
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/youtube"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/youtube" />
 
 
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/align"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/align" />
 
 
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/trans"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/trans" />
 
-            <TextView
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="#ababab"
-                />
+                <TextView
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="#ababab" />
 
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/share"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/share" />
 
-            <TextView
-                android:layout_width="1dp"
-                android:layout_height="match_parent"
-                android:background="#ababab"
-                />
+                <TextView
+                    android:layout_width="1dp"
+                    android:layout_height="match_parent"
+                    android:background="#ababab" />
 
-            <ImageView
-                android:layout_width="0dp"
-                android:layout_height="50dp"
-                android:layout_weight="1"
-                android:src="@drawable/heart"
-                android:scaleType="center"
-                />
+                <ImageView
+                    android:layout_width="0dp"
+                    android:layout_height="50dp"
+                    android:layout_weight="1"
+                    android:scaleType="center"
+                    android:src="@drawable/heart" />
 
 
-        </LinearLayout>
+            </LinearLayout>
 
 
         </LinearLayout>
@@ -302,12 +287,11 @@
 
     </RelativeLayout>
 
-<include
-    layout="@layout/drawer_menu"
-    android:layout_height="match_parent"
-    android:layout_width="wrap_content"
-    android:layout_gravity="start"
-    />
+    <include
+        layout="@layout/drawer_menu"
+        android:layout_width="wrap_content"
+        android:layout_height="match_parent"
+        android:layout_gravity="start" />
 
 
 </android.support.v4.widget.DrawerLayout>

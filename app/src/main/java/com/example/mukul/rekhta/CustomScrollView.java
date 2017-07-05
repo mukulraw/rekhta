@@ -9,6 +9,7 @@ import android.view.MotionEvent;
 
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.widget.HorizontalScrollView;
 import android.widget.ScrollView;
 
 import static android.view.MotionEvent.INVALID_POINTER_ID;
@@ -17,7 +18,7 @@ import static android.view.MotionEvent.INVALID_POINTER_ID;
  * Created by mukul on 04/07/17.
  */
 
-public class CustomScrollView extends ScrollView {
+public class CustomScrollView extends HorizontalScrollView {
 
     private Matrix matrix = new Matrix();
     private Matrix matrixInverse = new Matrix();

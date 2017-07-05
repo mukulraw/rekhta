@@ -8,9 +8,10 @@ import android.util.AttributeSet;
 import android.view.MotionEvent;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.HorizontalScrollView;
 
 
-public class ZoomableViewGroup extends ViewGroup {
+public class ZoomableViewGroup extends HorizontalScrollView {
 
     private Matrix matrix = new Matrix();
     private Matrix matrixInverse = new Matrix();

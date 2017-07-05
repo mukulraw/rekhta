@@ -1,6 +1,8 @@
 package com.example.mukul.rekhta;
 
 import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.PointF;
 import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
 import android.support.v4.view.GravityCompat;
@@ -10,6 +12,8 @@ import android.support.v7.app.ActionBarDrawerToggle;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.Toolbar;
+import android.text.Layout;
+import android.util.FloatMath;
 import android.util.Log;
 import android.util.TypedValue;
 import android.view.GestureDetector;
@@ -24,6 +28,8 @@ import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.animation.ScaleAnimation;
 import android.widget.FrameLayout;
+import android.widget.HorizontalScrollView;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -45,22 +51,40 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
 
     Toolbar toolbar;
-    LinearLayout layout;
+
     DrawerLayout drawer;
     LinearLayout content;
     ScaleGestureDetector scaleGD;
     Toast toast;
     ProgressBar progress;
-    LinearLayout scrollContainer;
-    //NestedScrollView scroll;
-    TwoDScrollView scroll;
+    LinearLayout contain;
+
+ProgressBar progress1;
+
+    PointF start = new PointF();
+    PointF mid = new PointF();
+    float oldDist = 1f;
+
+
+    static final int NONE = 0;
+    static final int DRAG = 1;
+    static final int ZOOM = 2;
+    int mode = NONE;
+
+
+    //TwoDScrollView scroll;
 
     TextView title, author;
 
-    //LinearLayout container;
+    ScrollView scView;
+
+    Matrix matrix = new Matrix();
+    Matrix savedMatrix = new Matrix();
+
+    LinearLayout container;
 
     int flag = 1;
 
@@ -76,43 +100,38 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-//        gestureDetector = new GestureDetector(this, new GestureListener());
 
-        scaleGD = new ScaleGestureDetector(this, new simpleOnScaleGestureListener());
 
-//        container = (LinearLayout)findViewById(R.id.container);
+        contain = (LinearLayout)findViewById(R.id.contain);
+
+
+        progress1 = (ProgressBar)findViewById(R.id.progress1);
+
+        //container = (LinearLayout)findViewById(R.id.container);
 
         content = (LinearLayout) findViewById(R.id.content);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         title = (TextView) findViewById(R.id.title);
         author = (TextView) findViewById(R.id.author);
-        scroll = (TwoDScrollView) findViewById(R.id.scroll);
+        scView = (ScrollView)findViewById(R.id.scview);
+
 //        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
-/*
 
-        mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+
+
+
+        /*scView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
             @Override
-            public boolean onScale(ScaleGestureDetector detector) {
-                float scale = 1 - detector.getScaleFactor();
+            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
 
-                float prevScale = mScale;
-                mScale += scale;
+                int totalHeight = scView.getChildAt(0).getHeight();
 
-                if (mScale < 0.1f) // Minimum scale condition:
-                    mScale = 0.1f;
+                float d = (scrollY/totalHeight) * 100;
 
-                if (mScale > 10f) // Maximum scale condition:
-                    mScale = 10f;
-                ScaleAnimation scaleAnimation = new ScaleAnimation(1f / prevScale, 1f / mScale, 1f / prevScale, 1f / mScale, detector.getFocusX(), detector.getFocusY());
-                scaleAnimation.setDuration(0);
-                scaleAnimation.setFillAfter(true);
+                progress1.setProgress((int)d);
 
-                //scroll.startAnimation(scaleAnimation);
-                //horizontalScrollView.startAnimation(scaleAnimation);
-                return true;
             }
-        });
-*/
+        });*/
 
 
         gh1 = (LinearLayout) findViewById(R.id.ghz1);
@@ -219,10 +238,14 @@ public class MainActivity extends AppCompatActivity {
 
                                 final String wo = wordwrap.getString("W");
 
-                                TextView word = new TextView(MainActivity.this);
+                                final TextView word = new TextView(MainActivity.this);
                                 word.setPadding(5, 0, 5, 0);
                                 word.setBackgroundColor(Color.TRANSPARENT);
                                 word.setText(wo);
+                                word.setTextSize(16);
+                                word.setTextColor(Color.BLACK);
+
+
 
 
 
@@ -233,6 +256,7 @@ public class MainActivity extends AppCompatActivity {
                                         toast.show();
                                     }
                                 });
+
 
                                 line.addView(word);
 
@@ -364,6 +388,17 @@ public class MainActivity extends AppCompatActivity {
 
                     content.addView(con);
 
+                    /*container.removeAllViews();
+
+                    ZoomView zv = new ZoomView(MainActivity.this);
+
+                    zv.addView(scroll);
+
+                    zv.setNestedScrollingEnabled(false);
+
+                    container.addView(zv);*/
+
+
                     progress.setVisibility(View.GONE);
 
 
@@ -454,7 +489,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -466,9 +501,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -478,10 +520,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
                                     para.addView(line);
 
@@ -503,7 +613,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -598,7 +710,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -610,9 +722,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -622,11 +741,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
 
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
                                     para.addView(line);
 
 
@@ -647,7 +833,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -743,7 +931,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -755,9 +943,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -767,11 +962,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
 
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
                                     para.addView(line);
 
 
@@ -792,7 +1054,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -887,7 +1151,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.END);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -899,9 +1163,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -911,11 +1182,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
 
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
                                     para.addView(line);
 
 
@@ -936,7 +1274,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -1029,7 +1369,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1041,9 +1381,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1053,10 +1400,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
                                     para.addView(line);
 
@@ -1078,7 +1493,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -1171,7 +1588,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1183,9 +1600,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1195,9 +1619,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -1220,7 +1713,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -1392,7 +1887,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1404,9 +1899,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1416,10 +1918,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
                                     para.addView(line);
 
@@ -1441,7 +2011,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -1531,7 +2103,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1543,9 +2115,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1555,9 +2134,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -1580,6 +2228,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
 
                                 Log.d("asdasd", "\n");
 
@@ -1666,7 +2317,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1678,9 +2329,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1690,9 +2348,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -1715,6 +2442,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
 
                                 Log.d("asdasd", "\n");
 
@@ -1802,7 +2532,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.END);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1814,9 +2544,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1826,9 +2563,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -1851,7 +2657,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -1935,7 +2743,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -1947,9 +2755,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -1959,9 +2774,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -1984,7 +2868,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2068,7 +2954,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2080,9 +2966,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2092,9 +2985,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -2117,7 +3079,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2206,7 +3170,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2218,9 +3182,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2230,9 +3201,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -2255,7 +3295,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2345,7 +3387,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2357,9 +3399,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2369,10 +3418,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
                                     para.addView(line);
 
@@ -2394,7 +3511,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2480,7 +3599,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2492,9 +3611,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2504,10 +3630,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
 
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
                                     para.addView(line);
 
@@ -2529,7 +3723,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2616,7 +3812,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.END);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2628,9 +3824,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2640,9 +3843,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -2665,7 +3937,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2749,7 +4023,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2761,9 +4035,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2773,9 +4054,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -2798,7 +4148,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -2882,7 +4234,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
@@ -2894,9 +4246,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -2906,9 +4265,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -2931,7 +4359,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3021,7 +4451,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -3033,9 +4463,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -3045,9 +4482,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -3070,7 +4576,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3159,7 +4667,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -3171,9 +4679,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -3183,9 +4698,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -3208,7 +4792,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3294,7 +4880,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -3306,9 +4892,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -3318,9 +4911,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -3343,7 +5005,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3430,7 +5094,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -3442,9 +5106,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -3454,9 +5125,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -3479,7 +5219,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3563,7 +5305,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.START);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -3575,9 +5317,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -3587,9 +5336,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -3612,7 +5430,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3696,7 +5516,7 @@ public class MainActivity extends AppCompatActivity {
 
                                     //String line = "";
 
-                                    LinearLayout line = new LinearLayout(MainActivity.this);
+                                    final LinearLayout line = new LinearLayout(MainActivity.this);
                                     line.setOrientation(LinearLayout.HORIZONTAL);
                                     line.setGravity(Gravity.CENTER_HORIZONTAL);
                                     line.setLayoutDirection(View.LAYOUT_DIRECTION_RTL);
@@ -3708,9 +5528,16 @@ public class MainActivity extends AppCompatActivity {
 
                                         final String wo = wordwrap.getString("W");
 
-                                        TextView word = new TextView(MainActivity.this);
+                                        final TextView word = new TextView(MainActivity.this);
                                         word.setPadding(5, 0, 5, 0);
+                                        word.setBackgroundColor(Color.TRANSPARENT);
                                         word.setText(wo);
+                                        word.setTextSize(16);
+                                        word.setTextColor(Color.BLACK);
+
+
+
+
 
                                         word.setOnClickListener(new View.OnClickListener() {
                                             @Override
@@ -3720,9 +5547,78 @@ public class MainActivity extends AppCompatActivity {
                                             }
                                         });
 
+
                                         line.addView(word);
 
                                     }
+
+                                    final int maxwidth = getWindowManager().getDefaultDisplay().getWidth();
+
+                                    final int[] wordwidth = {0};
+
+                                    Log.d("asdCount" , String.valueOf(line.getChildCount()));
+
+                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                    {
+
+                                        final View v = line.getChildAt(m);
+
+
+                                        final int finalM = m;
+                                        v.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
+                                            @Override
+                                            public void onGlobalLayout() {
+                                                v.getViewTreeObserver().removeOnGlobalLayoutListener(this);
+
+                                                wordwidth[0] = wordwidth[0] + v.getWidth();
+
+                                                Log.d("asd" , String.valueOf(v.getWidth()));
+
+                                                if (finalM == line.getChildCount()-1)
+                                                {
+
+                                                    int emptySpace = maxwidth - wordwidth[0];
+
+                                                    Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+
+                                                    Log.d("empty" , String.valueOf(emptySpace));
+
+                                                    float space = emptySpace / (line.getChildCount() + 1);
+
+                                                    float netspace = space / 2;
+
+                                                    for (int m = 0 ; m < line.getChildCount() ; m++)
+                                                    {
+
+
+                                                        View v = line.getChildAt(m);
+
+                                                        LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                                LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
+
+                                                        layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
+
+                                                        //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                        v.setLayoutParams(layoutParams);
+
+                                                    }
+
+//                            line.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+
+
+                                                }
+
+                                            }
+                                        });
+
+
+
+
+                                    }
+
+                                    Log.d("maxWidth" , String.valueOf(maxwidth));
 
 
                                     para.addView(line);
@@ -3745,7 +5641,9 @@ public class MainActivity extends AppCompatActivity {
                                 });
 
                                 con.addView(para);
-
+                                Space ap = new Space(MainActivity.this);
+                                ap.setMinimumHeight(30);
+                                con.addView(ap);
                                 Log.d("asdasd", "\n");
 
                             }
@@ -3782,46 +5680,153 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    public class simpleOnScaleGestureListener extends ScaleGestureDetector.SimpleOnScaleGestureListener {
 
-        @Override
-        public boolean onScale(ScaleGestureDetector detector) {
-            //float size = codedText.getTextSize();
-            float factor = detector.getScaleFactor();
-            int increase = 0;
-            if(factor > 1.0f)
-                increase = 2;
-            else if(factor < 1.0f)
-                increase = -2;
 
-            try {
-                Thread.sleep(200);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-            //remembering the favourable text size
 
-            return true;
+
+
+
+
+
+
+
+
+
+
+
+
+    @Override
+    public boolean onTouch(View v, MotionEvent event) {
+        TextView view = (TextView) v;
+
+        float scale;
+
+        dumpEvent(event);
+        // Handle touch events here...
+
+        switch (event.getAction() & 255)
+        {
+            case MotionEvent.ACTION_DOWN:   // first finger down only
+                savedMatrix.set(matrix);
+                start.set(event.getX(), event.getY());
+                Log.d("asd", "mode=DRAG"); // write to LogCat
+                mode = DRAG;
+                break;
+
+            case MotionEvent.ACTION_UP: // first finger lifted
+
+            case 6: // second finger lifted
+
+                mode = NONE;
+                Log.d("asd", "mode=NONE");
+                break;
+
+            case 5: // first and second finger down
+
+                oldDist = spacing(event);
+                Log.d("asd", "oldDist=" + oldDist);
+                if (oldDist > 5f) {
+                    savedMatrix.set(matrix);
+                    midPoint(mid, event);
+                    mode = ZOOM;
+                    Log.d("asd", "mode=ZOOM");
+                }
+                break;
+
+            case MotionEvent.ACTION_MOVE:
+
+                if (mode == DRAG)
+                {
+                    matrix.set(savedMatrix);
+                    matrix.postTranslate(event.getX() - start.x, event.getY() - start.y); // create the transformation in the matrix  of points
+                }
+                else if (mode == ZOOM)
+                {
+                    // pinch zooming
+                    float newDist = spacing(event);
+                    Log.d("asd", "newDist=" + newDist);
+                    if (newDist > 5f)
+                    {
+                        matrix.set(savedMatrix);
+                        scale = newDist / oldDist; // setting the scaling of the
+                        // matrix...if scale > 1 means
+                        // zoom in...if scale < 1 means
+                        // zoom out
+                        matrix.postScale(scale, scale, mid.x, mid.y);
+                    }
+                }
+                break;
         }
+
+         // display the transformation on screen
+
+        return true; // indicate event was handled
+    }
+
+
+
+
+    private float spacing(MotionEvent event)
+    {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float) Math.sqrt(x * x + y * y);
+    }
+
+/*
+ * --------------------------------------------------------------------------
+ * Method: midPoint Parameters: PointF object, MotionEvent Returns: void
+ * Description: calculates the midpoint between the two fingers
+ * ------------------------------------------------------------
+ */
+
+    private void midPoint(PointF point, MotionEvent event)
+    {
+        float x = event.getX(0) + event.getX(1);
+        float y = event.getY(0) + event.getY(1);
+        point.set(x / 2, y / 2);
+    }
+
+    /** Show an event in the LogCat view, for debugging */
+    private void dumpEvent(MotionEvent event)
+    {
+        String names[] = { "DOWN", "UP", "MOVE", "CANCEL", "OUTSIDE","POINTER_DOWN", "POINTER_UP", "7?", "8?", "9?" };
+        StringBuilder sb = new StringBuilder();
+        int action = event.getAction();
+        int actionCode = action & MotionEvent.ACTION_MASK;
+        sb.append("event ACTION_").append(names[actionCode]);
+
+        if (actionCode == MotionEvent.ACTION_POINTER_DOWN || actionCode == MotionEvent.ACTION_POINTER_UP)
+        {
+            sb.append("(pid ").append(action >> MotionEvent.ACTION_POINTER_ID_SHIFT);
+            sb.append(")");
+        }
+
+        sb.append("[");
+        for (int i = 0; i < event.getPointerCount(); i++)
+        {
+            sb.append("#").append(i);
+            sb.append("(pid ").append(event.getPointerId(i));
+            sb.append(")=").append((int) event.getX(i));
+            sb.append(",").append((int) event.getY(i));
+            if (i + 1 < event.getPointerCount())
+                sb.append(";");
+        }
+
+        sb.append("]");
+        Log.d("Touch Events ---------", sb.toString());
     }
 
 
 
 
 
-    private class GestureListener extends GestureDetector.SimpleOnGestureListener {
-        @Override
-        public boolean onDown(MotionEvent e) {
-            return true;
-        }
 
-        // event when double tap occurs
-        @Override
-        public boolean onDoubleTap(MotionEvent e) {
-            // double tap fired.
-            return true;
-        }
-    }
+
+
+
+
+
 
 
 }
