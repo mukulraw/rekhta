@@ -131,21 +131,29 @@
                         android:focusable="true"
                         android:id="@+id/scroll_container"
                         >-->
+                    <!--<com.example.mukul.rekhta.ZoomableViewGroup
+                        android:layout_width="match_parent"
+                        android:layout_height="match_parent">-->
+
                     <com.example.mukul.rekhta.ZoomableViewGroup
                         android:layout_width="match_parent"
-                        android:layout_height="match_parent">
-                    <ScrollView
+                        android:layout_height="wrap_content"
+                        android:orientation="vertical"
+                        android:id="@+id/container"
+                        >
+
+                    <com.example.mukul.rekhta.TwoDScrollView
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:id="@+id/scroll"
-                        android:background="#00000000"
+                        android:paddingBottom="50dp"
                         android:clipToPadding="false"
                         >
 
 
 
                     <LinearLayout
-                        android:layout_width="wrap_content"
+                        android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:nestedScrollingEnabled="false"
                         android:id="@+id/content"
@@ -163,9 +171,11 @@
 
 
 
-            </ScrollView>
-                    </com.example.mukul.rekhta.ZoomableViewGroup>
+            </com.example.mukul.rekhta.TwoDScrollView>
                     <!--</com.example.mukul.rekhta.ZoomableViewGroup>-->
+                    <!--</com.example.mukul.rekhta.ZoomableViewGroup>-->
+
+                    </com.example.mukul.rekhta.ZoomableViewGroup>
 
                 </LinearLayout>
 

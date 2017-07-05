@@ -21,7 +21,9 @@ import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
 import android.view.ViewTreeObserver;
+import android.view.WindowManager;
 import android.view.animation.ScaleAnimation;
+import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.ProgressBar;
 import android.widget.ScrollView;
@@ -54,7 +56,11 @@ public class MainActivity extends AppCompatActivity {
     ProgressBar progress;
     LinearLayout scrollContainer;
     //NestedScrollView scroll;
+    TwoDScrollView scroll;
+
     TextView title, author;
+
+    //LinearLayout container;
 
     int flag = 1;
 
@@ -74,11 +80,13 @@ public class MainActivity extends AppCompatActivity {
 
         scaleGD = new ScaleGestureDetector(this, new simpleOnScaleGestureListener());
 
+//        container = (LinearLayout)findViewById(R.id.container);
+
         content = (LinearLayout) findViewById(R.id.content);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         title = (TextView) findViewById(R.id.title);
         author = (TextView) findViewById(R.id.author);
-        //scroll = (NestedScrollView)findViewById(R.id.scroll);
+        scroll = (TwoDScrollView) findViewById(R.id.scroll);
 //        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
 /*
 
@@ -268,10 +276,15 @@ public class MainActivity extends AppCompatActivity {
 
 
                                                 View v = line.getChildAt(m);
-                                                v.setPadding((int)netspace , 0 , (int)netspace , 0);
 
+                                                LinearLayout.LayoutParams layoutParams = new LinearLayout.LayoutParams(
+                                                        LinearLayout.LayoutParams.WRAP_CONTENT, LinearLayout.LayoutParams.WRAP_CONTENT);
 
+                                                layoutParams.setMargins((int)netspace , 0 , (int)netspace , 0);
 
+                                                //v.setPadding((int)netspace , 0 , (int)netspace , 0);
+
+                                                v.setLayoutParams(layoutParams);
 
                                             }
 
@@ -1240,15 +1253,17 @@ public class MainActivity extends AppCompatActivity {
 
 
 
-        /*gestureDetector = new GestureDetector(this, new GestureListener());
+        //gestureDetector = new GestureDetector(this, new GestureListener());
 
 // animation for scalling
-        mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener()
+        /*mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener()
         {
             @Override
             public boolean onScale(ScaleGestureDetector detector)
             {
                 float scale = 1 - detector.getScaleFactor();
+
+
 
                 float prevScale = mScale;
                 mScale += scale;
@@ -1261,16 +1276,25 @@ public class MainActivity extends AppCompatActivity {
                 ScaleAnimation scaleAnimation = new ScaleAnimation(1f / prevScale, 1f / mScale, 1f / prevScale, 1f / mScale, detector.getFocusX(), detector.getFocusY());
                 scaleAnimation.setDuration(0);
                 scaleAnimation.setFillAfter(true);
-                scrollContainer.startAnimation(scaleAnimation);
+
+
+
+                scroll.setLayoutParams(new LinearLayout.LayoutParams((int)detector.getCurrentSpanX() , (int)detector.getCurrentSpanY()));
+
+                scroll.startAnimation(scaleAnimation);
+
+
+
                 return true;
             }
-        });
-*/
+        });*/
+
 
 // step 3: override dispatchTouchEvent()
 
 
         //com.example.mukul.rekhta.ZoomView zv = new com.example.mukul.rekhta.ZoomView(MainActivity.this);
+
 
 
 
@@ -1285,8 +1309,8 @@ public class MainActivity extends AppCompatActivity {
         mScaleDetector.onTouchEvent(event);
         gestureDetector.onTouchEvent(event);
         return gestureDetector.onTouchEvent(event);
-    }*/
-
+    }
+*/
 
 
     @Override
@@ -3780,13 +3804,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
 
-    /*@Override
-    public boolean dispatchTouchEvent(MotionEvent event) {
-        super.dispatchTouchEvent(event);
-        mScaleDetector.onTouchEvent(event);
-        gestureDetector.onTouchEvent(event);
-        return gestureDetector.onTouchEvent(event);
-    }
+
 
 
     private class GestureListener extends GestureDetector.SimpleOnGestureListener {
@@ -3801,7 +3819,7 @@ public class MainActivity extends AppCompatActivity {
             // double tap fired.
             return true;
         }
-    }*/
+    }
 
 
 }
