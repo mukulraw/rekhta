@@ -24,6 +24,7 @@ import android.view.MenuItem;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewGroup;
 import android.view.ViewTreeObserver;
 import android.view.WindowManager;
 import android.view.animation.ScaleAnimation;
@@ -43,6 +44,9 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import pl.polidea.view.ZoomView;
 import retrofit2.Call;
 import retrofit2.Callback;
@@ -51,7 +55,7 @@ import retrofit2.Retrofit;
 import retrofit2.converter.gson.GsonConverterFactory;
 import retrofit2.converter.scalars.ScalarsConverterFactory;
 
-public class MainActivity extends AppCompatActivity implements View.OnTouchListener {
+public class MainActivity extends AppCompatActivity {
 
     Toolbar toolbar;
 
@@ -63,6 +67,8 @@ public class MainActivity extends AppCompatActivity implements View.OnTouchListe
     LinearLayout contain;
 
 ProgressBar progress1;
+
+List<TextView> l;
 
     PointF start = new PointF();
     PointF mid = new PointF();
@@ -101,6 +107,7 @@ ProgressBar progress1;
         setContentView(R.layout.activity_main);
 
 
+l = new ArrayList<>();
 
         contain = (LinearLayout)findViewById(R.id.contain);
 
@@ -118,20 +125,6 @@ ProgressBar progress1;
 //        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
 
 
-
-
-        /*scView.setOnScrollChangeListener(new View.OnScrollChangeListener() {
-            @Override
-            public void onScrollChange(View v, int scrollX, int scrollY, int oldScrollX, int oldScrollY) {
-
-                int totalHeight = scView.getChildAt(0).getHeight();
-
-                float d = (scrollY/totalHeight) * 100;
-
-                progress1.setProgress((int)d);
-
-            }
-        });*/
 
 
         gh1 = (LinearLayout) findViewById(R.id.ghz1);
@@ -160,6 +153,7 @@ ProgressBar progress1;
                 this, drawer, toolbar, R.string.navigation_drawer_open, R.string.navigation_drawer_close);
         drawer.setDrawerListener(toggle);
         toggle.syncState();
+
 
 
 
@@ -232,6 +226,8 @@ ProgressBar progress1;
                             line.setLayoutDirection(View.LAYOUT_DIRECTION_LTR);
                             line.setPadding(5, 10, 5, 10);
 
+                            l = new ArrayList<>();
+
                             for (int k = 0; k < wordArray.length(); k++) {
 
                                 JSONObject wordwrap = wordArray.getJSONObject(k);
@@ -259,6 +255,7 @@ ProgressBar progress1;
 
 
                                 line.addView(word);
+                                l.add(word);
 
                             }
 
@@ -386,7 +383,7 @@ ProgressBar progress1;
                     }
 
 
-                    content.addView(con);
+
 
                     /*container.removeAllViews();
 
@@ -397,7 +394,7 @@ ProgressBar progress1;
                     zv.setNestedScrollingEnabled(false);
 
                     container.addView(zv);*/
-
+                    content.addView(con);
 
                     progress.setVisibility(View.GONE);
 
@@ -1750,41 +1747,7 @@ ProgressBar progress1;
 
 
 
-        //gestureDetector = new GestureDetector(this, new GestureListener());
 
-// animation for scalling
-        /*mScaleDetector = new ScaleGestureDetector(this, new ScaleGestureDetector.SimpleOnScaleGestureListener()
-        {
-            @Override
-            public boolean onScale(ScaleGestureDetector detector)
-            {
-                float scale = 1 - detector.getScaleFactor();
-
-
-
-                float prevScale = mScale;
-                mScale += scale;
-
-                if (mScale < 0.1f) // Minimum scale condition:
-                    mScale = 0.1f;
-
-                if (mScale > 10f) // Maximum scale condition:
-                    mScale = 10f;
-                ScaleAnimation scaleAnimation = new ScaleAnimation(1f / prevScale, 1f / mScale, 1f / prevScale, 1f / mScale, detector.getFocusX(), detector.getFocusY());
-                scaleAnimation.setDuration(0);
-                scaleAnimation.setFillAfter(true);
-
-
-
-                scroll.setLayoutParams(new LinearLayout.LayoutParams((int)detector.getCurrentSpanX() , (int)detector.getCurrentSpanY()));
-
-                scroll.startAnimation(scaleAnimation);
-
-
-
-                return true;
-            }
-        });*/
 
 
 // step 3: override dispatchTouchEvent()
@@ -5686,136 +5649,6 @@ ProgressBar progress1;
 
 
 
-
-
-
-
-
-
-
-
-
-    @Override
-    public boolean onTouch(View v, MotionEvent event) {
-        TextView view = (TextView) v;
-
-        float scale;
-
-        dumpEvent(event);
-        // Handle touch events here...
-
-        switch (event.getAction() & 255)
-        {
-            case MotionEvent.ACTION_DOWN:   // first finger down only
-                savedMatrix.set(matrix);
-                start.set(event.getX(), event.getY());
-                Log.d("asd", "mode=DRAG"); // write to LogCat
-                mode = DRAG;
-                break;
-
-            case MotionEvent.ACTION_UP: // first finger lifted
-
-            case 6: // second finger lifted
-
-                mode = NONE;
-                Log.d("asd", "mode=NONE");
-                break;
-
-            case 5: // first and second finger down
-
-                oldDist = spacing(event);
-                Log.d("asd", "oldDist=" + oldDist);
-                if (oldDist > 5f) {
-                    savedMatrix.set(matrix);
-                    midPoint(mid, event);
-                    mode = ZOOM;
-                    Log.d("asd", "mode=ZOOM");
-                }
-                break;
-
-            case MotionEvent.ACTION_MOVE:
-
-                if (mode == DRAG)
-                {
-                    matrix.set(savedMatrix);
-                    matrix.postTranslate(event.getX() - start.x, event.getY() - start.y); // create the transformation in the matrix  of points
-                }
-                else if (mode == ZOOM)
-                {
-                    // pinch zooming
-                    float newDist = spacing(event);
-                    Log.d("asd", "newDist=" + newDist);
-                    if (newDist > 5f)
-                    {
-                        matrix.set(savedMatrix);
-                        scale = newDist / oldDist; // setting the scaling of the
-                        // matrix...if scale > 1 means
-                        // zoom in...if scale < 1 means
-                        // zoom out
-                        matrix.postScale(scale, scale, mid.x, mid.y);
-                    }
-                }
-                break;
-        }
-
-         // display the transformation on screen
-
-        return true; // indicate event was handled
-    }
-
-
-
-
-    private float spacing(MotionEvent event)
-    {
-        float x = event.getX(0) - event.getX(1);
-        float y = event.getY(0) - event.getY(1);
-        return (float) Math.sqrt(x * x + y * y);
-    }
-
-/*
- * --------------------------------------------------------------------------
- * Method: midPoint Parameters: PointF object, MotionEvent Returns: void
- * Description: calculates the midpoint between the two fingers
- * ------------------------------------------------------------
- */
-
-    private void midPoint(PointF point, MotionEvent event)
-    {
-        float x = event.getX(0) + event.getX(1);
-        float y = event.getY(0) + event.getY(1);
-        point.set(x / 2, y / 2);
-    }
-
-    /** Show an event in the LogCat view, for debugging */
-    private void dumpEvent(MotionEvent event)
-    {
-        String names[] = { "DOWN", "UP", "MOVE", "CANCEL", "OUTSIDE","POINTER_DOWN", "POINTER_UP", "7?", "8?", "9?" };
-        StringBuilder sb = new StringBuilder();
-        int action = event.getAction();
-        int actionCode = action & MotionEvent.ACTION_MASK;
-        sb.append("event ACTION_").append(names[actionCode]);
-
-        if (actionCode == MotionEvent.ACTION_POINTER_DOWN || actionCode == MotionEvent.ACTION_POINTER_UP)
-        {
-            sb.append("(pid ").append(action >> MotionEvent.ACTION_POINTER_ID_SHIFT);
-            sb.append(")");
-        }
-
-        sb.append("[");
-        for (int i = 0; i < event.getPointerCount(); i++)
-        {
-            sb.append("#").append(i);
-            sb.append("(pid ").append(event.getPointerId(i));
-            sb.append(")=").append((int) event.getX(i));
-            sb.append(",").append((int) event.getY(i));
-            if (i + 1 < event.getPointerCount())
-                sb.append(";");
-        }
-
-        sb.append("]");
-        Log.d("Touch Events ---------", sb.toString());
-    }
 
 
 

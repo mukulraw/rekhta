@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:id="@+id/scroll"
+    android:layout_height="wrap_content"
+    tools:context="com.example.mukul.rekhta.Test">
+
+    <com.example.mukul.rekhta.ZoomLayout
+        android:layout_width="match_parent"
+        android:id="@+id/zoom"
+        android:orientation="vertical"
+        android:layout_height="wrap_content">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="asdasdasd\n
+asdasd\n
+asda\n
+sda\n
+sda\n
+sda\n
+sd\n
+asd\n
+asd\n
+asd\n
+adasdadadad\n
+ad\n
+a\n
+da\n
+das\n
+dasdas
+das\n
+\n
+\n
+
+da\n
+sd\n
+ad\n
+ad\n
+ad
+as
+da
+da
+sda
+da
+sda
+d
+ad
+ad
+ad
+as
+da
+da
+da
+da
+sd
+ad
+ad
+ada
+da
+da
+da
+d"
+        android:textSize="24sp"
+        android:gravity="center_horizontal"
+android:id="@+id/text"
+        />
+
+    </com.example.mukul.rekhta.ZoomLayout>
+
+</ScrollView>

@@ -43,9 +43,10 @@
                 android:orientation="vertical">
 
                 <ScrollView
-                    android:layout_width="match_parent"
+                    android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:id="@+id/scview"
+                    android:fillViewport="true"
                     android:paddingBottom="50dp"
                     android:clipToPadding="false"
                     >
@@ -55,6 +56,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:orientation="vertical"
+                        android:fillViewport="true"
                         android:id="@+id/contain"
                         >
 
@@ -150,6 +152,9 @@
 
 
 
+                        <com.example.mukul.rekhta.ZoomLayout
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content">
 
                             <LinearLayout
                                 android:id="@+id/content"
@@ -163,7 +168,7 @@
                                 android:nestedScrollingEnabled="false"
                                 android:orientation="vertical" />
 
-
+                        </com.example.mukul.rekhta.ZoomLayout>
 
 
 

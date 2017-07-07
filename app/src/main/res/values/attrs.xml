@@ -26,4 +26,12 @@
         <attr name="gridThickness" format="dimension" />
         <attr name="gridColor" format="color" />
     </declare-styleable>
+
+
+    <declare-styleable name="DroidUIScrollView">
+        <!-- Defines whether the DroidUIScrollView should stretch its content to fill the viewport. -->
+        <attr name="fillViewport" format="boolean"/>
+    </declare-styleable>
+
+
 </resources>
