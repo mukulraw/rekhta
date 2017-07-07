@@ -22,7 +22,7 @@ import android.widget.LinearLayout;
 import android.widget.RelativeLayout;
 
 
-public class ZoomLayout extends LinearLayout implements ScaleGestureDetector.OnScaleGestureListener{
+public class ZoomLayout extends RelativeLayout implements ScaleGestureDetector.OnScaleGestureListener{
 
     private enum Mode {
         NONE,

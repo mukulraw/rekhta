@@ -70,15 +70,31 @@ ProgressBar progress1;
 
 List<TextView> l;
 
-    PointF start = new PointF();
-    PointF mid = new PointF();
-    float oldDist = 1f;
+    private enum Mode {
+        NONE,
+        DRAG,
+        ZOOM
+    }
 
+    private static final String TAG = "ZoomLayout";
+    private static final float MIN_ZOOM = 1.0f;
+    private static final float MAX_ZOOM = 4.0f;
 
-    static final int NONE = 0;
-    static final int DRAG = 1;
-    static final int ZOOM = 2;
-    int mode = NONE;
+    private Mode mode = Mode.NONE;
+    private float scale = 1.0f;
+    private float lastScaleFactor = 0f;
+
+    // Where the finger first  touches the screen
+    private float startX = 0f;
+    private float startY = 0f;
+
+    // How much to translate the canvas
+    private float dx = 0f;
+    private float dy = 0f;
+    private float prevDx = 0f;
+    private float prevDy = 0f;
+
+    LinearLayout continer;
 
 
     //TwoDScrollView scroll;
@@ -117,6 +133,7 @@ l = new ArrayList<>();
         //container = (LinearLayout)findViewById(R.id.container);
 
         content = (LinearLayout) findViewById(R.id.content);
+        container = (LinearLayout) findViewById(R.id.container);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         title = (TextView) findViewById(R.id.title);
         author = (TextView) findViewById(R.id.author);
@@ -158,6 +175,98 @@ l = new ArrayList<>();
 
 
 
+
+
+        final ScaleGestureDetector scaleDetector = new ScaleGestureDetector(MainActivity.this, new ScaleGestureDetector.OnScaleGestureListener() {
+            @Override
+            public boolean onScale(ScaleGestureDetector detector) {
+                return false;
+            }
+
+            @Override
+            public boolean onScaleBegin(ScaleGestureDetector detector) {
+                float scaleFactor = detector.getScaleFactor();
+                Log.i(TAG, "onScale" + scaleFactor);
+                if (lastScaleFactor == 0 || (Math.signum(scaleFactor) == Math.signum(lastScaleFactor))) {
+                    scale *= scaleFactor;
+                    scale = Math.max(MIN_ZOOM, Math.min(scale, MAX_ZOOM));
+                    lastScaleFactor = scaleFactor;
+                } else {
+                    lastScaleFactor = 0;
+                }
+                return true;
+            }
+
+            @Override
+            public void onScaleEnd(ScaleGestureDetector detector) {
+
+            }
+        });
+
+
+
+
+
+
+        container.setOnTouchListener(new View.OnTouchListener() {
+            @Override
+            public boolean onTouch(View v, MotionEvent motionEvent) {
+                switch (motionEvent.getAction() & MotionEvent.ACTION_MASK) {
+                    case MotionEvent.ACTION_DOWN:
+                        Log.i(TAG, "DOWN");
+
+                        container.performClick();
+
+                        if (scale > MIN_ZOOM) {
+                            mode = Mode.DRAG;
+                            startX = motionEvent.getX() - prevDx;
+                            startY = motionEvent.getY() - prevDy;
+                        }
+                        break;
+                    case MotionEvent.ACTION_MOVE:
+                        if (mode == Mode.DRAG) {
+                            dx = motionEvent.getX() - startX;
+                            dy = motionEvent.getY() - startY;
+                        }
+                        break;
+                    case MotionEvent.ACTION_POINTER_DOWN:
+                        mode = Mode.ZOOM;
+                        break;
+                    case MotionEvent.ACTION_POINTER_UP:
+                        mode = Mode.DRAG;
+                        break;
+                    case MotionEvent.ACTION_UP:
+                        Log.i(TAG, "UP");
+                        mode = Mode.NONE;
+                        prevDx = dx;
+                        prevDy = dy;
+                        break;
+                }
+
+                scaleDetector.onTouchEvent(motionEvent);
+
+                if ((mode == Mode.DRAG && scale >= MIN_ZOOM) || mode == Mode.ZOOM) {
+                    scView.requestDisallowInterceptTouchEvent(true);
+                    float maxDx = (container.getWidth() - (container.getWidth() / scale)) / 2 * scale;
+                    float maxDy = (container.getHeight() - (container.getHeight() / scale)) / 2 * scale;
+                    dx = Math.min(Math.max(dx, -maxDx), maxDx);
+                    dy = Math.min(Math.max(dy, -maxDy), maxDy);
+                    Log.i(TAG, "Width: " + container.getWidth() + ", scale " + scale + ", dx " + dx
+                            + ", max " + maxDx);
+                    container.setScaleX(scale);
+                    container.setScaleY(scale);
+                    container.setTranslationX(dx);
+                    container.setTranslationY(dy);
+
+                    scView.getLayoutParams().height = container.getHeight();
+
+                }
+
+                return true;
+
+            }
+
+        });
 
 
 

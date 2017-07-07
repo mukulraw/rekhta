@@ -1,21 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
-<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+<com.example.mukul.rekhta.TwoDScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
     xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:id="@+id/scroll"
-    android:layout_height="wrap_content"
+    android:layout_height="match_parent"
     tools:context="com.example.mukul.rekhta.Test">
 
-    <com.example.mukul.rekhta.ZoomLayout
+    <!--<com.example.mukul.rekhta.ZoomLayout
         android:layout_width="match_parent"
         android:id="@+id/zoom"
         android:orientation="vertical"
-        android:layout_height="wrap_content">
+        android:layout_height="wrap_content">-->
 
     <TextView
-        android:layout_width="match_parent"
+        android:layout_width="wrap_content"
         android:layout_height="wrap_content"
+        android:layout_gravity="center_horizontal"
         android:text="asdasdasd\n
 asdasd\n
 asda\n
@@ -69,6 +70,6 @@ d"
 android:id="@+id/text"
         />
 
-    </com.example.mukul.rekhta.ZoomLayout>
+<!--    </com.example.mukul.rekhta.ZoomLayout>-->
 
-</ScrollView>
+</com.example.mukul.rekhta.TwoDScrollView>

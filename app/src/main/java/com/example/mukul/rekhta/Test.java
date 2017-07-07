@@ -11,16 +11,16 @@ public class Test extends AppCompatActivity {
 
     ScrollView scroll;
     TextView text;
-    ZoomLayout zoom;
+    //ZoomLayout zoom;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_test);
 
-        scroll = (ScrollView)findViewById(R.id.scroll);
+//        scroll = (ScrollView)findViewById(R.id.scroll);
         text = (TextView)findViewById(R.id.text);
-        zoom = (ZoomLayout) findViewById(R.id.zoom);
+      //zoom = (ZoomLayout) findViewById(R.id.zoom);
 
     }
 }
