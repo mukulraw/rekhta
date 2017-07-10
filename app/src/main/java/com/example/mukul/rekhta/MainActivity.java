@@ -43,6 +43,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import com.example.mukul.rekhta.POJO.dataBean;
+import com.viven.imagezoom.ImageZoomHelper;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -64,11 +65,12 @@ public class MainActivity extends AppCompatActivity {
     Toolbar toolbar;
 
     DrawerLayout drawer;
-    CustomListView content;
+    ListView content;
     ScaleGestureDetector scaleGD;
     Toast toast;
     ProgressBar progress;
     LinearLayout contain;
+    ImageZoomHelper imageZoomHelper;
 
 ProgressBar progress1;
 
@@ -126,6 +128,16 @@ List<TextView> l;
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
+        /*if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.JELLY_BEAN) {
+            View decorView = getWindow().getDecorView();
+            // Hide the status bar.
+            int uiOptions = View.SYSTEM_UI_FLAG_LAYOUT_FULLSCREEN |
+                    View.SYSTEM_UI_FLAG_LAYOUT_STABLE;
+            decorView.setSystemUiVisibility(uiOptions);
+        }*/
+
+        imageZoomHelper = new ImageZoomHelper(this);
+
 
         contain = (LinearLayout)findViewById(R.id.contain);
 
@@ -134,7 +146,7 @@ List<TextView> l;
 
         //container = (LinearLayout)findViewById(R.id.container);
 
-        content = (CustomListView) findViewById(R.id.content);
+        content = (ListView) findViewById(R.id.content);
         container = (LinearLayout) findViewById(R.id.container);
         toolbar = (Toolbar) findViewById(R.id.toolbar);
         title = (TextView) findViewById(R.id.title);
@@ -144,7 +156,7 @@ List<TextView> l;
 //        scrollContainer = (LinearLayout)findViewById(R.id.scroll_container);
 
 
-
+        ImageZoomHelper.setZoom(content , true);
 
         gh1 = (LinearLayout) findViewById(R.id.ghz1);
         gh2 = (LinearLayout) findViewById(R.id.ghz2);
@@ -241,6 +253,7 @@ List<TextView> l;
 
 
 
+        ImageZoomHelper.setViewZoomable(findViewById(R.id.content));
 
 
     }
@@ -254,6 +267,12 @@ List<TextView> l;
         return gestureDetector.onTouchEvent(event);
     }
 */
+
+
+    @Override
+    public boolean dispatchTouchEvent(MotionEvent ev) {
+        return imageZoomHelper.onDispatchTouchEvent(ev) || super.dispatchTouchEvent(ev);
+    }
 
 
     @Override
@@ -391,7 +410,7 @@ List<TextView> l;
 
                         final int[] wordwidth = {0};
 
-                        Log.d("asdCount" , String.valueOf(line.getChildCount()));
+                        //Log.d("asdCount" , String.valueOf(line.getChildCount()));
 
                         for (int m = 0 ; m < line.getChildCount() ; m++)
                         {
@@ -407,16 +426,16 @@ List<TextView> l;
 
                                     wordwidth[0] = wordwidth[0] + v.getWidth();
 
-                                    Log.d("asd" , String.valueOf(v.getWidth()));
+                                    //Log.d("asd" , String.valueOf(v.getWidth()));
 
                                     if (finalM == line.getChildCount()-1)
                                     {
 
                                         int emptySpace = maxwidth - wordwidth[0];
 
-                                        Log.d("wordWidth" , String.valueOf(wordwidth[0]));
+                                        //Log.d("wordWidth" , String.valueOf(wordwidth[0]));
 
-                                        Log.d("empty" , String.valueOf(emptySpace));
+                                        //Log.d("empty" , String.valueOf(emptySpace));
 
                                         float space = emptySpace / (line.getChildCount() + 1);
 
@@ -453,7 +472,7 @@ List<TextView> l;
 
                         }
 
-                        Log.d("maxWidth" , String.valueOf(maxwidth));
+                        //Log.d("maxWidth" , String.valueOf(maxwidth));
 
                         para.addView(line);
 
@@ -485,7 +504,7 @@ List<TextView> l;
                             para.addView(line);*/
 
 
-                        Log.d("asdasd", line + "\n");
+                        //Log.d("asdasd", line + "\n");
 
                     }
 
@@ -503,7 +522,7 @@ List<TextView> l;
 
 
 
-                    Log.d("asdasd", "\n");
+                    //Log.d("asdasd", "\n");
 
 
 

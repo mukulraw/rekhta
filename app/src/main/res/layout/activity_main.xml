@@ -5,6 +5,7 @@
     android:id="@+id/drawer"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:fitsSystemWindows="true"
     tools:context="com.example.mukul.rekhta.MainActivity"
     tools:openDrawer="start">
 
@@ -168,7 +169,7 @@
                             android:orientation="vertical"
                             android:id="@+id/container"
                             >
-                            <com.example.mukul.rekhta.CustomListView
+                            <ListView
                                 android:id="@+id/content"
                                 android:layout_width="wrap_content"
                                 android:layout_height="wrap_content"
