@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.widget.ScrollView;
 import android.widget.TextView;
 
+import com.viven.imagezoom.ImageZoomHelper;
+
 import org.w3c.dom.Text;
 
 public class Test extends AppCompatActivity {
@@ -21,6 +23,11 @@ public class Test extends AppCompatActivity {
 //        scroll = (ScrollView)findViewById(R.id.scroll);
         text = (TextView)findViewById(R.id.text);
       //zoom = (ZoomLayout) findViewById(R.id.zoom);
+
+
+
+
+
 
     }
 }
