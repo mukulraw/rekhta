@@ -47,6 +47,7 @@ import org.json.JSONObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import pl.polidea.view.ZoomView;
 import retrofit2.Call;
@@ -1771,37 +1772,37 @@ public class MainActivity extends AppCompatActivity {
 
         scView.removeAllViews();
 
+        scView.setLayerType(View.LAYER_TYPE_HARDWARE , null);
+
+        zoomView.setLayerType(View.LAYER_TYPE_HARDWARE , null);
+
         zoomView.addView(content);
 
         zoomView.setListner(new ZoomView.ZoomViewListener() {
             @Override
             public void onZoomStarted(float v, float v1, float v2) {
 
+                Log.d("Zoom" , "Started");
+                Log.d("ZoomHeight" , String.valueOf(zoomView.getMeasuredHeight()));
             }
 
             @Override
             public void onZooming(float v, float v1, float v2) {
 
+
+                Log.d("Zoom" , "Zooming");
+
+                //scView.getLayoutParams().height = zoomView.getMeasuredHeight();
+
+                scView.updateViewLayout(zoomView , zoomView.getLayoutParams());
+
+                Log.d("ZoomHeight" , String.valueOf(zoomView.getMeasuredHeight()));
             }
 
             @Override
             public void onZoomEnded(float v, float v1, float v2) {
 
-
-                content.getViewTreeObserver().addOnGlobalLayoutListener(new ViewTreeObserver.OnGlobalLayoutListener() {
-                    @Override
-                    public void onGlobalLayout() {
-                        content.getViewTreeObserver().removeOnGlobalLayoutListener(this);
-
-                        scView.getLayoutParams().height = content.getHeight();
-
-                    }
-                });
-
-
-
-
-
+                Log.d("Zoom" , "End");
 
 
             }
